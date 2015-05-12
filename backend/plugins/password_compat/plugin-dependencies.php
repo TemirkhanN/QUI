@@ -3,6 +3,6 @@
 
 return [
     'php'=>[
-        'password_compat.php',
+        'password_compat',
     ],
 ];

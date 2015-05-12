@@ -53,9 +53,6 @@ class ActiveRecord{
                     $this->$field['Field'] = $data[$field['Field']];
                 } else{
                     switch($field['Key']){
-                        case 'UNI':
-                            $this->$field['Field'] = 'unique_'.microtime(true);
-                            break;
                         case 'PRI':
                             unset($this->$field['Field']);
                             break;
@@ -81,10 +78,8 @@ class ActiveRecord{
 
     public function save()
     {
-        $data = (array) $this;
 
-
-        $data = $this->unsetPrivateVariables($data);
+        $data = $this->returnData();
 
 
         if($data['id']){
@@ -102,7 +97,7 @@ class ActiveRecord{
 
 
 
-    public function getRecord($where)
+    public function getRecord($where = [])
     {
 
         $data = Application::$db->getRecord(['*'], $this->_information['tableName'], $where);
@@ -113,6 +108,13 @@ class ActiveRecord{
         }
 
         return false;
+    }
+
+
+    public function returnData()
+    {
+        $data = (array) $this;
+        return $this->unsetPrivateVariables($data);
     }
 
 

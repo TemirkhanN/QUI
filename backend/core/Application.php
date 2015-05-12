@@ -295,7 +295,7 @@ class Application {
         echo 'Error occurred in ' .$error['file'] . ' on line ' . $error['line'] . '<br>';
         echo  $error['message'];
 
-        echo ' at ';
+        echo '<br> at ';
         foreach ($error['args'] as $arg) {
             if(!is_array($arg)){
                 echo  $arg .' ';

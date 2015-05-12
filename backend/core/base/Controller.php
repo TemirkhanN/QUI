@@ -251,4 +251,16 @@ class Controller {
     }
 
 
+
+
+    public function redirect($url = '', $code = 200)
+    {
+        if(!preg_match("~^http(s?)://", $url)) {
+            header("Location:" . $url);
+        } elseif(filter_var($url, FILTER_VALIDATE_URL)){
+            header("Location:/redirect.php?url=".$url);
+        }
+    }
+
+
 } 

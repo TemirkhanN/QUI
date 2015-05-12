@@ -171,7 +171,7 @@ class PdoWrapper extends Connection{
             $record = $record->fetch(\PDO::FETCH_ASSOC);
 
             if(count($record) === 1){
-                return $record[$columns];
+                return  $record[$columns];
             } else{
                 return $record;
             }

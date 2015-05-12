@@ -13,10 +13,11 @@ $dependencies =  [
     'runtime' => [
         'urlManager' => 'web/UrlManager',
         'controller' => 'base/Controller',
+        'model' => 'base/Model',
         'formBuilder' => 'base/Form',
         'db' => 'db/Connection',
         'pdo' => 'db/PdoWrapper',
-        'activeRecord' => 'db/ActiveRecord'
+        'activeRecord' => 'db/ActiveRecord',
     ],
 
     'classes' => [
