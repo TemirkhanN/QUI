@@ -1,9 +1,9 @@
-﻿-- phpMyAdmin SQL Dump
+-- phpMyAdmin SQL Dump
 -- version 4.1.14
 -- http://www.phpmyadmin.net
 --
 -- Хост: 127.0.0.1
--- Время создания: Май 12 2015 г., 21:12
+-- Время создания: Май 16 2015 г., 02:57
 -- Версия сервера: 5.6.17
 -- Версия PHP: 5.5.12
 
@@ -40,7 +40,31 @@ CREATE TABLE IF NOT EXISTS `fm_conf` (
 
 INSERT INTO `fm_conf` (`id`, `name`, `parameter`) VALUES
 (1, 'theme', 'modern'),
-(2, 'site_title', 'Фреймворк 0.1');
+(2, 'site_title', 'Quintessense 0.1');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `user`
+--
+
+CREATE TABLE IF NOT EXISTS `user` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `login` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `privelegies` varchar(10) NOT NULL DEFAULT 'user',
+  `name` varchar(50) NOT NULL,
+  `regdate` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `login` (`login`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=7 ;
+
+--
+-- Дамп данных таблицы `user`
+--
+
+INSERT INTO `user` (`id`, `login`, `password`, `privelegies`, `name`, `regdate`) VALUES
+(1, 'admin', '$2y$10$NGipXcRzi7TrYmHjuacmaOzGCMsJozjal6AZM8nwW77761L2S5N2e', 'admin', 'Somebody', '2015-05-12 18:24:00');
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

@@ -9,25 +9,27 @@
 namespace app\controllers;
 
 
+use app\core\App;
 use app\core\base\Controller;
 
-class Main extends Controller {
+class MainController extends Controller {
 
 
     //Главная страница сайта
     public function pageIndex()
     {
+        $this->redirectToController('main/example');
 
+    }
+
+
+    public function pageExample()
+    {
         $variable = 'Hello World';
 
-
-        $this->setTitle('About us');
-
-
+        $this->setTitle('Bootstrap showcase');
 
         $this->renderPage('index', ['var'=>$variable]);
-
-
     }
 
 

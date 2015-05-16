@@ -10,25 +10,85 @@ namespace app\core;
 
 
 
-class Application {
+use app\core\web\Html;
+use app\plugins\Localization\Localization;
+
+class App {
 
 
-    protected static $config;
-    private static $dependencies;
-    public static $errors;
+    const DEFAULT_LANG = 'en';
+
+    public static $app; //Contains the application object
+    private static $config;
     public static $db;
+    private static $dependencies;
+    public static $plugins;
     public static $templateDir;
-    public static $templateHeaders; // Contains js, css and other data that shall be included in application teplate
+    public static $templateHeaders; // Contains js, css and other data that shall be included in application template
+    private static $errors;
+    private static $debug;
+    public static $language = self::DEFAULT_LANG;
 
 
 
 
 
-    public function __construct($config)
+    private function __construct($config)
     {
         self::$config = $config;
         self::$templateDir = $_SERVER['DOCUMENT_ROOT']. '/templates';
         self::$db = new db\PdoWrapper(self::getConfig('database'));
+        self::$language = self::getConfig('language');
+    }
+
+
+
+    public static function init($config)
+    {
+        if(self::$app == null){
+            self::$app = new self($config);
+        }
+
+        return self::$app;
+    }
+
+
+    public static function debugTimeTrack($identifier = '', $force = false)
+    {
+        if(self::getConfig('debugMode') || $force){
+            self::$debug['timeTracker'][$identifier] = microtime(true);
+        }
+    }
+
+
+    public static function debugShowTimeTrack($identifier = '', $force = false)
+    {
+        if(self::getConfig('debugMode') || $force){
+
+            try {
+                if (isset(self::$debug['timeTracker'][$identifier])) {
+                    return (microtime(true) - self::$debug['timeTracker'][$identifier]);
+                } else{
+                    throw new \Exception("This time tracker hasn't been initialized yet");
+                }
+            } catch(\Exception $error){
+                self::noteError($error);
+            }
+        }
+
+        return 999;
+    }
+
+
+
+    public static function debugInfo()
+    {
+
+        if(self::getConfig('debugMode')) {
+            echo PHP_EOL . '<br>time wasted ' . App::debugShowTimeTrack('mainTracker') . ' sec';
+            echo PHP_EOL . '<br>memory used ' . round(memory_get_usage() / 1024) . ' kb';
+            echo PHP_EOL . '<br>memory peak ' . round(memory_get_peak_usage(true) / 1024) . ' kb';
+        }
     }
 
 
@@ -38,8 +98,6 @@ class Application {
     {
 
         if(self::$errors == null){
-
-
             if(self::$db->connectedSuccessfully()) {
 
 
@@ -48,11 +106,8 @@ class Application {
 
                 $route = (new web\UrlManager($_SERVER['REQUEST_URI'], self::getConfig('routes')))->getRoute();
 
-                list($controller, $page) = explode('/', $route['action']);
-                $this->runController($controller, $page);
+                $this->runController($route['action']);
             }
-
-
         }
 
         self::showErrors();
@@ -121,29 +176,34 @@ class Application {
 
 
 
-    protected static function loadPlugin($name)
+    protected static function loadPlugin($name = '')
     {
-        $pluginFiles = self::requireFile(__DIR__ .'/../plugins/' . $name . '/plugin-dependencies.php');
+        try {
+            $pluginFiles = self::requireFile(__DIR__ . '/../plugins/' . $name . '/plugin-dependencies.php');
+            self::$plugins[$name] = true;
 
-        if($pluginFiles){
-            foreach($pluginFiles as $type=>$files){
-                if($type == 'php') {
-                    foreach($files as $fileName){
-                        self::requireFile(__DIR__ .'/../plugins/' . $name . '/' . $fileName . '.php');
-                    }
-                } else{
-                    foreach($files as $fileName) {
-                        $path = __DIR__ . '/../plugins/' . $name . '/' . $type . '/' . $fileName . '.' . $type;
-                        self::$templateHeaders[$type][] = [
-                            'path'=>$path,
-                            'type'=>$type,
-                            'fileName'=>$fileName
-                        ];
+            if ($pluginFiles) {
+                foreach ($pluginFiles as $type => $files) {
+                    if ($type == 'php') {
+                        foreach ($files as $fileName) {
+                            self::requireFile(__DIR__ . '/../plugins/' . $name . '/' . $fileName . '.php');
+                        }
+                    } else {
+                        foreach ($files as $fileName) {
+                            $path = __DIR__ . '/../plugins/' . $name . '/' . $type . '/' . $fileName . '.' . $type;
+                            self::$templateHeaders[$type][] = [
+                                'path' => $path,
+                                'type' => $type,
+                                'fileName' => $fileName
+                            ];
+                        }
+
                     }
 
                 }
-
             }
+        } catch(\Exception $e){
+            self::noteError($e);
         }
     }
 
@@ -162,7 +222,6 @@ class Application {
 
     protected function loadModels($modelsDir = null)
     {
-
         $modelsDirs  = glob($modelsDir . '/*', GLOB_ONLYDIR);
 
         if (!empty($modelsDirs)){
@@ -170,10 +229,7 @@ class Application {
         }
 
         $models = glob($modelsDir .'/*.php');
-
         array_walk($models, 'self::requireFile');
-
-
     }
 
 
@@ -216,13 +272,16 @@ class Application {
 
 
 
-    private function runController($controller, $page = false)
+    public function runController($action = '')
     {
+
+        list($controller, $page) = explode('/', $action);
+
         $controller = ucfirst($controller);
-        self::requireFile(__DIR__ .'/../controllers/' . $controller . '.php');
+        self::requireFile(__DIR__ .'/../controllers/' . $controller . 'Controller.php');
 
 
-        $cName = '\\app\\controllers\\' . $controller;
+        $cName = '\\app\\controllers\\' . $controller . 'Controller';
 
         $theme = self::$db->getRecord('parameter', 'fm_conf', ['name' => 'theme']);
         $siteName = self::$db->getRecord('parameter', 'fm_conf', ['name' => 'site_title']);
@@ -310,9 +369,43 @@ class Application {
     public static function showErrors()
     {
         if(self::$errors !== null && self::getConfig('debugMode')) {
-            array_walk(self::$errors, 'self::showError');
+            if(isset(self::$plugins['bootstrap'])):?>
+
+                <div class="panel panel-danger">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><?=self::_t('error')?></h3>
+                    </div>
+                    <div class="panel-body">
+                        <?array_walk(self::$errors, 'self::showError');?>
+                    </div>
+                </div>
+
+            <? else: ?>
+                ahaha
+            <?endif;
         }
 
+    }
+
+
+
+
+    public static function t($text = '', $lang = '')
+    {
+        if(empty($lang)){
+            $lang = self::$language;
+        }
+
+        $words = explode(' ', $text);
+
+        if(isset(self::$plugins['localization'])){
+            $text = '';
+            foreach($words as $word){
+                $text .= ' ' . Localization::translate($word, $lang);
+            }
+        }
+
+        return Html::encode($text);
     }
 
 

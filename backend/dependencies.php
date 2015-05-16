@@ -12,6 +12,7 @@ $dependencies =  [
 
     'runtime' => [
         'urlManager' => 'web/UrlManager',
+        'plugin' => 'base/Plugin',
         'controller' => 'base/Controller',
         'model' => 'base/Model',
         'formBuilder' => 'base/Form',
@@ -28,6 +29,6 @@ $dependencies =  [
 ];
 
 
-core\Application::loadDependencies($dependencies);
+core\App::loadDependencies($dependencies);
 
 

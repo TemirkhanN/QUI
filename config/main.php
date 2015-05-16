@@ -12,6 +12,8 @@ return  [
 
     'debugMode' =>true,
 
+    'language' => 'ru',
+
     'database' => [
         'host' => 'localhost',
         'name' => 'myProject',
@@ -20,26 +22,25 @@ return  [
     ],
 
     'plugins' => [
+        'localization',
         'bootstrap',
-        'password_compat' // Используется для поддержки функций password_+  в PHP 5.3-5.5
+        'password-compat' // used for function  "password_(verify|hash...)" compatibility  in PHP 5.4-5.5
     ],
 
     'routes' => [
-        [
-            'route' => '~^/*$~',
-            'action' => 'main/index'
-        ],
+        ['route' => '~^/*$~', 'action' => 'main/index'],
 
-        [
-            'route' => '~^/admin/add_question$~',
-            'action' => 'admin/add-question',
-        ],
+        ['route' => '~^/admin/add_question$~', 'action' => 'admin/add-question',],
 
+        ['route' => '~^/api/get_question$~', 'action' => 'api/get-question',],
 
-        [
-            'route' => '~^/api/get_question$~',
-            'action' => 'api/get-question',
-        ],
+        ['route' =>'~^/login$~', 'action' => 'user/login'],
+
+        ['route' =>'~^/profile$~', 'action' => 'user/profile'],
+
+        ['route' =>'~^/logout$~', 'action' => 'user/logout'],
+
+        ['route' => '~^/showcase$~', 'action' => 'main/example'],
 
         'error_404'=>[
             'action' => 'main/error404',

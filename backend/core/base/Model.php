@@ -15,22 +15,12 @@ class Model {
 
 
     /**
-     * @param string $method contains method name where error occurred
+     * @param string $method logging error message
      * @param string $error logging error message
      */
-    protected function logError($error = '')
+    protected function logError($method = '', $error = '')
     {
-        $detailedInfo = debug_backtrace();
-        $occurredIn = $detailedInfo[0]['file'];
-        $i = 0;
-
-        while($detailedInfo[$i]['file'] == $occurredIn){
-            $errorMethod = $detailedInfo[$i]['function'];
-            $this->errors[$errorMethod] = $errorMethod;
-            ++$i;
-        }
-        $this->errors[$errorMethod] = $error;
-        unset($detailedInfo);
+        $this->errors[$method][] = $error;
     }
 
 
@@ -53,7 +43,7 @@ class Model {
             return $this->errors[$method];
         }
 
-        return false;
+        return [];
 
     }
 

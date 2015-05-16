@@ -9,7 +9,7 @@
 namespace app\core\db;
 
 
-use app\core\Application;
+use app\core\App;
 
 class PdoWrapper extends Connection{
 
@@ -25,7 +25,7 @@ class PdoWrapper extends Connection{
 
         } catch(\PDOException $e){
 
-            Application::noteError($e);
+            App::noteError($e);
         }
 
         if(isset($db)){

@@ -9,7 +9,7 @@
 namespace app\core\base;
 
 
-use app\core\Application;
+use app\core\App;
 use app\core\web\Html;
 
 class Controller {
@@ -108,7 +108,7 @@ class Controller {
         try {
             if (in_array($type, $this->allowedViews)) {
 
-                $className = (new \ReflectionClass($this))->getShortName();
+                $className = str_replace('Controller', '', (new \ReflectionClass($this))->getShortName());
 
 
                 $this->view = $_SERVER['DOCUMENT_ROOT'] . '/../pages/' . lcfirst($className) . '/' . $view . '.' . $type;
@@ -129,7 +129,7 @@ class Controller {
                 throw new \Exception('Deprecated file type');
             }
         } catch(\Exception $error){
-            Application::noteError($error);
+            App::noteError($error);
         }
 
 
@@ -160,7 +160,7 @@ class Controller {
     private function render()
     {
 
-        $this->registerHeaders(Application::$templateHeaders);
+        $this->registerHeaders(App::$templateHeaders);
 
         include $this->templateAbsPath . '/template.php';
 
@@ -224,7 +224,7 @@ class Controller {
     public function registerJs($path = '', $fileName = null)
     {
         if($fileName){
-            $path = Application::copyToTemplateFolder($path, 'js', $fileName);
+            $path = App::copyToTemplateFolder($path, 'js', $fileName);
         }
 
 
@@ -235,7 +235,7 @@ class Controller {
     public function registerCss($path = '', $fileName = null)
     {
         if($fileName){
-            $path = Application::copyToTemplateFolder($path, 'css', $fileName);
+            $path = App::copyToTemplateFolder($path, 'css', $fileName);
         }
 
 
@@ -255,11 +255,21 @@ class Controller {
 
     public function redirect($url = '', $code = 200)
     {
-        if(!preg_match("~^http(s?)://", $url)) {
+        if(!preg_match("~^http(s?)://~", $url)) {
             header("Location:" . $url);
         } elseif(filter_var($url, FILTER_VALIDATE_URL)){
             header("Location:/redirect.php?url=".$url);
         }
+    }
+
+
+    /**
+     * @param string $request  redirects from current controller to another one
+     * for example myController/action  or  myController
+     */
+    public function redirectToController($request = '')
+    {
+        App::$app->runController($request);
     }
 
 

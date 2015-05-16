@@ -9,9 +9,13 @@
 namespace app\core\db;
 
 
-use app\core\Application;
+use app\core\App;
 
 class ActiveRecord{
+
+
+    const ARR = 'array';
+    const OBJ = 'object';
 
     public $id; // Эта переменная всегда должна быть объявлена
     private $_information = []; // Здесь хранится необходимая системная информация
@@ -29,14 +33,13 @@ class ActiveRecord{
         $this->_reflection = new \ReflectionClass($this);
         $this->_information['namespace'] = $this->_reflection->getParentClass()->name;
         $this->_information['tableName'] = lcfirst($this->_reflection->getShortName());
-        $this->_information['schema'] = Application::$db->describeTable($this->_information['tableName']);
+        $this->_information['schema'] = App::$db->describeTable($this->_information['tableName']);
 
 
         if($id != null){
-            $data = Application::$db->getRecord(['*'], $this->_information['tableName'], ['id'=>$id]);
+            $this->getRow(['id'=>$id]);
         }
 
-        $this->declareFields($data);
     }
 
 
@@ -83,11 +86,11 @@ class ActiveRecord{
 
 
         if($data['id']){
-            if (Application::$db->updateRecord($data,  $this->_information['tableName'], ['id'=>$data['id']])){
+            if (App::$db->updateRecord($data,  $this->_information['tableName'], ['id'=>$data['id']])){
                 return true;
             }
         } else{
-            if (Application::$db->addRecord($data, $this->_information['tableName'])){
+            if (App::$db->addRecord($data, $this->_information['tableName'])){
                 return true;
             }
         }
@@ -97,10 +100,10 @@ class ActiveRecord{
 
 
 
-    public function getRecord($where = [])
+    public function getRow($where = [])
     {
 
-        $data = Application::$db->getRecord(['*'], $this->_information['tableName'], $where);
+        $data = App::$db->getRecord(['*'], $this->_information['tableName'], $where);
 
         if($data){
             $this->declareFields($data);
@@ -110,22 +113,38 @@ class ActiveRecord{
         return false;
     }
 
-
-    public function returnData()
+    public function getRecord($where = [], $type = self::ARR)
     {
-        $data = (array) $this;
-        return $this->unsetPrivateVariables($data);
+
+        $this->getRow($where);
+
+        return $this->returnData($type);
+
+    }
+
+
+    public function returnData($type = self::ARR)
+    {
+        $data = $type == self::ARR ? (array) $this : $this;
+        return $this->unsetPrivateVariables($data, $type);
     }
 
 
 
 
-    private function unsetPrivateVariables($data = [])
+    private function unsetPrivateVariables($data, $type = self::ARR)
     {
+        foreach($data as $name=>$value){
 
-        foreach(array_keys($data) as $name){
-            if(strpos($name, $this->_information['namespace'])){
-                unset($data[$name]);
+
+            if($type == self::ARR) {
+                if(strpos($name, $this->_information['namespace'])){
+                    unset($data[$name]);
+                }
+            } elseif($type == self::OBJ){
+                if($name[0] == '_') {
+                    unset($data->{$name});
+                }
             }
         }
 

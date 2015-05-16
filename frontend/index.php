@@ -1,11 +1,19 @@
 <?php
 
+use \app\core\App;
 
 define('ROOT_DIR', $_SERVER['DOCUMENT_ROOT']. '/..');
 
-require ROOT_DIR . '/backend/core/Application.php';
+require ROOT_DIR . '/backend/core/App.php';
+App::debugTimeTrack('mainTracker', true);
 require ROOT_DIR . '/backend/dependencies.php';
 
-$config = app\core\Application::requireFile(ROOT_DIR . '/config/main.php');
+$config = App::requireFile(ROOT_DIR . '/config/main.php');
 
-(new app\core\Application($config))->run();
+session_start();
+
+App::$app = App::init($config);
+App::$app->run();
+
+
+App::debugInfo();
