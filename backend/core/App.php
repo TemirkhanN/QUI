@@ -18,28 +18,21 @@ class App {
 
     const DEFAULT_LANG = 'en';
 
-    public static $app; //Contains the application object
+    public static  $app; //Contains the application object
+    public static  $cacheDir;
     private static $config;
-    public static $db;
-    private static $dependencies;
-    public static $plugins;
-    public static $templateDir;
-    public static $templateHeaders; // Contains js, css and other data that shall be included in application template
-    private static $errors;
+    public static  $db;
     private static $debug;
-    public static $language = self::DEFAULT_LANG;
+    private static $dependencies;
+    private static $errors;
+    public static  $templateDir;
+    public static  $templateHeaders; // Contains js, css and other data that shall be included in application template
+    public static  $language = self::DEFAULT_LANG;
+    public static  $request; //Contains parsed from $_SERVER['REQUEST_URI'] parameters that ruled in config
+    public static  $plugins; //list of loaded plugins
+    public static  $protocol;
 
 
-
-
-
-    private function __construct($config)
-    {
-        self::$config = $config;
-        self::$templateDir = $_SERVER['DOCUMENT_ROOT']. '/templates';
-        self::$db = new db\PdoWrapper(self::getConfig('database'));
-        self::$language = self::getConfig('language');
-    }
 
 
 
@@ -51,6 +44,19 @@ class App {
 
         return self::$app;
     }
+
+
+    private function __construct($config)
+    {
+        self::$config = $config;
+        self::$templateDir = $_SERVER['DOCUMENT_ROOT']. '/templates';
+        self::$db = new db\PdoWrapper(self::getConfig('database'));
+        self::$language = self::getConfig('language');
+        self::$cacheDir = $_SERVER['DOCUMENT_ROOT'] .'/../cache';
+        self::$protocol = self::getConfig('transferProtocol') === 'https' ? 'https' : 'http';
+    }
+
+
 
 
     public static function debugTimeTrack($identifier = '', $force = false)
@@ -80,6 +86,12 @@ class App {
     }
 
 
+    public static function switchOffDebug()
+    {
+        self::$config['debugMode'] = false;
+    }
+
+
 
     public static function debugInfo()
     {
@@ -104,9 +116,13 @@ class App {
                 $this->loadPlugins(self::getConfig('plugins'));
                 $this->loadModels(__DIR__ .'/../models');
 
-                $route = (new web\UrlManager($_SERVER['REQUEST_URI'], self::getConfig('routes')))->getRoute();
+                $urlManager = new web\UrlManager($_SERVER['REQUEST_URI'], self::getConfig('routes'));
 
-                $this->runController($route['action']);
+                $route = $urlManager->getRoute();
+
+                self::$request = $urlManager->getRequestParams();
+
+                $this->runController($route);
             }
         }
 
@@ -194,7 +210,8 @@ class App {
                             self::$templateHeaders[$type][] = [
                                 'path' => $path,
                                 'type' => $type,
-                                'fileName' => $fileName
+                                'fileName' => $fileName,
+                                'folder' => $name
                             ];
                         }
 
@@ -214,6 +231,13 @@ class App {
         if (is_array($plugins)){
             array_walk($plugins, 'self::loadPlugin');
         }
+    }
+
+
+
+    public static function pluginIsActive($pluginName)
+    {
+        return isset(self::$plugins[$pluginName]) && self::$plugins[$pluginName];
     }
 
 
@@ -274,8 +298,11 @@ class App {
 
     public function runController($action = '')
     {
-
-        list($controller, $page) = explode('/', $action);
+        if(strpos($action, '/')) {
+            list($controller, $page) = explode('/', $action);
+        } else{
+            list($controller, $page) = [$action, 'index'];
+        }
 
         $controller = ucfirst($controller);
         self::requireFile(__DIR__ .'/../controllers/' . $controller . 'Controller.php');
@@ -283,8 +310,21 @@ class App {
 
         $cName = '\\app\\controllers\\' . $controller . 'Controller';
 
-        $theme = self::$db->getRecord('parameter', 'fm_conf', ['name' => 'theme']);
-        $siteName = self::$db->getRecord('parameter', 'fm_conf', ['name' => 'site_title']);
+        if(self::$db->checkTableExist('fm_conf') === false){
+            self::$db->query("CREATE TABLE IF NOT EXISTS `fm_conf` (
+                                  `id` INT(11) AUTO_INCREMENT,
+                                  `name` VARCHAR (50) NOT NULL DEFAULT '',
+                                  `parameter` VARCHAR(100) NOT NULL DEFAULT '',
+                                  PRIMARY KEY (`id`),
+                                  UNIQUE (`name`)
+                              ) ENGINE=InnoDB");
+            $theme = null;
+            $siteName = "Set default sitename in `fm_conf`";
+        } else{
+            $theme = self::$db->getRecord('parameter', 'fm_conf', ['name' => 'theme']);
+            $siteName = self::$db->getRecord('parameter', 'fm_conf', ['name' => 'site_title']);
+        }
+
 
         if($theme && !empty($theme->parameter)){
             $theme = $theme->parameter;
@@ -298,35 +338,26 @@ class App {
 
         $controller = new $cName(self::$templateDir); // Initializing controller's template directory
 
-        $controller->setTheme($theme);
 
-        $controller->setPage($page);
 
-        $controller->setTitle($siteName);
-
-        $controller->run();
+        $controller->run($theme, $page, $siteName);
 
     }
 
 
-    public static function copyToTemplateFolder($path, $fileType, $fileName)
+    public static function copyFileToFolder($from = '', $destinationDir = '', $fileName = '')
     {
-        $fileDir = self::$templateDir . '/' . $fileType;
-        $fileShallExistPath = $fileDir .'/'. $fileName. '.' . $fileType;
-        if(!file_exists($fileShallExistPath)){
-
-            if(!is_dir($fileDir)){
-                mkdir($fileDir, 0755);
+        $to = $destinationDir .'/'.$fileName;
+        if(!file_exists($to)){
+            if(!is_dir($destinationDir)){
+                mkdir($destinationDir, 0755, true);
             }
-            copy($path, $fileShallExistPath);
-
-
-
+            copy($from, $to);
         }
 
-        $fileShallExistPath = str_ireplace($_SERVER['DOCUMENT_ROOT'], '', $fileShallExistPath);
+        $to = str_ireplace($_SERVER['DOCUMENT_ROOT'], '', $to);
 
-        return $fileShallExistPath;
+        return $to;
 
     }
 
@@ -407,6 +438,65 @@ class App {
 
         return Html::encode($text);
     }
+
+
+
+
+    public static function saveCache($fileName = '', $cachingData = '', $dir = null)
+    {
+
+        $dir = str_replace('.', '', $dir);
+        $dir = $dir != null ? self::$cacheDir . '/content/' . $dir . '' : self::$cacheDir . '/content';
+
+        $destination = $dir . '/' . $fileName . '.so';
+
+        if (!is_dir($dir)){
+            mkdir($dir, 0755);
+        }
+
+        if (file_put_contents($destination, $cachingData)){
+            return $destination;
+        }
+
+        return false;
+
+    }
+
+
+
+
+    private static function checkCacheActual($path = '')
+    {
+
+        $cacheSettings = self::getConfig('caching');
+
+
+        if(filemtime($path) > time() - $cacheSettings['cacheTime']){
+            return true;
+        }
+
+        return false;
+    }
+
+
+    public static function getCache($fileName = '', $dir = null)
+    {
+
+        $dir = str_replace('.', '', $dir);
+        $dir = $dir != null ? self::$cacheDir . '/content/' . $dir . '' : self::$cacheDir . '/content';
+
+        $cacheFile = $dir . '/' . $fileName . '.so';
+
+        if(file_exists($cacheFile) && self::checkCacheActual($cacheFile)){
+            return file_get_contents($cacheFile);
+        } else{
+            return false;
+        }
+    }
+
+
+
+
 
 
 

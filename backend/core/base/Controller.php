@@ -12,88 +12,89 @@ namespace app\core\base;
 use app\core\App;
 use app\core\web\Html;
 
-class Controller {
+class Controller
+{
 
-    private $allowedViews;
-    protected $content;
+    private $allowedViews = ['php', 'html', 'xhtml', 'xml'];
     private $headers = [];
-    protected $page;
-    public $title;
+    protected $layout = 'main/main-menu';
+    protected $page = 'index';
+    protected $content = '';
+    public $title = '';
     private $templateAbsPath;
     public $templateRelPath;
-    protected $view;
-
 
 
 
     public function __construct($templateDir)
     {
-        $this->allowedViews = ['php', 'html', 'xhtml', 'xml'];
         $this->templateAbsPath = $templateDir;
     }
 
 
     public function setPage($page)
     {
-
-
         while($pos = strpos($page, '-')){
-
             $page = mb_substr($page, 0, $pos).ucfirst(substr($page, $pos+1));
-
         }
-
-        $this->page = $page;
-
+        $this->page = 'page'.ucfirst($page);
     }
+
 
 
 
     public function setTheme($theme)
     {
-
         $theme =  $theme && !empty($theme) ? $theme : 'default';
-
         $this->templateAbsPath .= '/' . $theme;
+    }
+
+
+    public function setMetaDesc($description = '')
+    {
+        $this->setHeadMeta('<meta desc=" ' .Html::encode($description). '">');
+    }
+
+
+
+    public function setMetaKeys($tags = '')
+    {
+        if(is_array($tags)){
+            $tags = implode(',', $tags);
+        }
+        $this->setHeadMeta('<meta keywords=" ' .Html::encode($tags). '">');
+    }
+
+    public function setHeadMeta($metaData = '')
+    {
+        $this->headers[] = $metaData;
 
     }
 
 
 
-    public function setTitle($title)
+    public function setTitle($title = '')
     {
         $this->title = Html::encode($title);
     }
 
 
 
-    public function title()
+
+
+    public function run($theme, $page, $title)
     {
-        return $this->title;
-    }
+        $this->setTheme($theme);
 
+        $this->setPage($page);
 
-
-    public function getPage()
-    {
-
-        return $this->page;
-
-    }
-
-
-
-    public function run()
-    {
-
-        $action = 'page'.ucfirst($this->page);
+        $this->setTitle($title);
 
         $this->templateRelPath = str_ireplace($_SERVER['DOCUMENT_ROOT'], '', $this->templateAbsPath);
 
-        if(method_exists($this, $action)){
-            $this->$action();
+        if(method_exists($this, $this->page)){
+            $this->{$this->page}();
         }
-
 
     }
 
@@ -102,7 +103,7 @@ class Controller {
 
 
 
-    protected function renderPage($view, $variables = [], $type = 'php')
+    protected function renderPage($page, $variables = [], $type = 'php')
     {
 
         try {
@@ -111,17 +112,15 @@ class Controller {
                 $className = str_replace('Controller', '', (new \ReflectionClass($this))->getShortName());
 
 
-                $this->view = $_SERVER['DOCUMENT_ROOT'] . '/../pages/' . lcfirst($className) . '/' . $view . '.' . $type;
+                $pageFile = $_SERVER['DOCUMENT_ROOT'] . '/../pages/' . lcfirst($className) . '/' . $page . '.' . $type;
 
-                if(file_exists($this->view)){
+                if(file_exists($pageFile)){
 
-                    $this->preRender($this->view, $variables);
-
-                    $this->render();
-
+                    $this->renderContent($pageFile, $variables);
+                    $this->renderTemplate();
 
                 } else{
-                    throw new \Exception('Viewer  "' . $view . '" doesn\'t exist in directory');
+                    throw new \Exception('Page  "' . $page . '" doesn\'t exist in directory');
                 }
 
 
@@ -139,7 +138,7 @@ class Controller {
 
 
 
-    private function preRender($path = '', $variables = [])
+    private function renderContent($page = '', $variables = [])
     {
         ob_start();
 
@@ -147,26 +146,112 @@ class Controller {
             extract($variables);
         }
 
-        include $path;
+        include $page;
 
-        return $this->content = ob_get_clean();
+        $this->content = ob_get_clean();
     }
 
 
 
 
 
+    private function renderTemplate()
+    {
+        $this->registerFiles(App::$templateHeaders);
+        include $this->templateAbsPath . '/template.php';
+    }
 
-    private function render()
+
+
+
+    public function renderApi($rawText = null)
+    {
+        App::switchOffDebug();
+
+        header('Content-Type: application/json; charset=utf-8');
+        if($rawText != null){
+            echo $rawText;
+        } else {
+            echo $this->content();
+        }
+    }
+
+
+
+    private function registerFiles($files = [])
+    {
+        if(is_array($files)){
+
+            foreach($files as $type=>$file){
+
+                foreach($file as $fileData) {
+                    switch ($type) {
+                        case 'js':
+                            $this->registerJs($fileData['path'], $fileData);
+                            break;
+
+                        case 'css':
+                            $this->registerCss($fileData['path'], $fileData);
+                            break;
+
+
+
+                        default:
+                            $this->loadFileToTemplateDir($fileData['path'], $fileData);
+                            break;
+                    }
+                }
+            }
+
+        }
+
+    }
+
+
+
+    public function registerJs($path = '', $file = null)
+    {
+        if($file){
+            $destinationDir = $this->templateAbsPath.'/js/'.$file['folder'];
+            $path = App::copyFileToFolder($path, $destinationDir, $file['fileName'].'.js');
+        } else{
+            $path = $this->templateRelPath .'/'.$path;
+        }
+
+
+        $this->setHeadMeta('<script type="text/javascript" src="' . Html::encode($path) . '"></script>');
+    }
+
+
+    public function registerCss($path = '', $file = null)
+    {
+        if($file){
+            $destinationDir = $this->templateAbsPath.'/css/'.$file['folder'];
+            $path = App::copyFileToFolder($path, $destinationDir, $file['fileName'].'.css');
+        } else{
+            $path = $this->templateRelPath .'/'.$path;
+        }
+
+
+        $this->setHeadMeta('<link rel="stylesheet" type="text/css" href="' . Html::encode($path) . '">');
+    }
+
+
+
+    private function loadFileToTemplateDir($path = '', $file = [])
     {
 
-        $this->registerHeaders(App::$templateHeaders);
-
-        include $this->templateAbsPath . '/template.php';
-
+        if(!empty($file)){
+            $destinationDir = $this->templateAbsPath;
+            if(in_array(strtolower($file['type']), ['jpg','jpeg', 'gif', 'png','bmp'])){
+                $destinationDir .= '/images';
+            }
+            $destinationDir .= '/'.$file['type'];
+            $destinationDir .= !empty($file['folder']) ? '/'.$file['folder'] : '';
+            $fileName = $file['fileName'] . '.' . $file['type'];
+            App::copyFileToFolder($path, $destinationDir, $fileName);
+        }
     }
-
-
 
 
 
@@ -186,61 +271,24 @@ class Controller {
 
 
 
-
-    public function setHeadMeta($metaData = '')
+    public function title()
     {
-        $this->headers[] = $metaData;
-
+        return $this->title;
     }
 
 
 
-    private function registerHeaders($headers = [])
+    public function layout($layoutName = '')
     {
-        if(is_array($headers)){
-
-            foreach($headers as $type=>$header){
-
-                foreach($header as $headerFile) {
-                    switch ($type) {
-                        case 'js':
-                            $this->registerJs($headerFile['path'], $headerFile['fileName']);
-                            break;
-
-                        case 'css':
-                            $this->registerCss($headerFile['path'], $headerFile['fileName']);
-                            break;
-
-                        default:
-                            break;
-                    }
-                }
-            }
-
+        $layoutName = trim($layoutName);
+        if(empty($layoutName) || !file_exists($_SERVER['DOCUMENT_ROOT'] . '/../layouts/' . $layoutName . '.php')){
+            $layoutName = $_SERVER['DOCUMENT_ROOT'] . '/../layouts/' . $this->layout . '.php';
+        } else{
+            $layoutName = $_SERVER['DOCUMENT_ROOT'] . '/../layouts/' . $layoutName . '.php';
         }
-
+        include $layoutName;
     }
 
-    public function registerJs($path = '', $fileName = null)
-    {
-        if($fileName){
-            $path = App::copyToTemplateFolder($path, 'js', $fileName);
-        }
-
-
-        $this->setHeadMeta('<script type="text/javascript" src="' . Html::encode($path) . '"></script>');
-    }
-
-
-    public function registerCss($path = '', $fileName = null)
-    {
-        if($fileName){
-            $path = App::copyToTemplateFolder($path, 'css', $fileName);
-        }
-
-
-        $this->setHeadMeta('<link rel="stylesheet" type="text/css" href="' . Html::encode($path) . '">');
-    }
 
 
 
@@ -253,13 +301,14 @@ class Controller {
 
 
 
-    public function redirect($url = '', $code = 200)
+    public function redirect($url = '', $code = 303)
     {
         if(!preg_match("~^http(s?)://~", $url)) {
-            header("Location:" . $url);
+            header("Location:" . $url, true, $code);
         } elseif(filter_var($url, FILTER_VALIDATE_URL)){
-            header("Location:/redirect.php?url=".$url);
+            header("Location:/redirect.php?url=".$url, true, $code);
         }
+        exit();
     }
 
 

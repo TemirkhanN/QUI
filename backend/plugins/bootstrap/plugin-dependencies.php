@@ -7,6 +7,11 @@ return [
     ],
 
     'js'=>[
-        'bootstrap'
+        'bootstrap',
+        'jquery.bootpag.min'
+    ],
+
+    'php'=>[
+        'Bootstrap'
     ]
 ];

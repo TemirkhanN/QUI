@@ -148,29 +148,22 @@ class PdoWrapper extends Connection{
      * @param string $tableName название таблицы, из которой пытаемся получить запись
      * @param array $where условия, которые передаются в виде ассоциативного массива ключ=значение
      * @param array $sort сортировка КЛЮЧ ЗНАЧЕНИЕ (column ASC/DESC)
+     * @param int $offset selecting element offset if somehow needed
      * @return mixed возвращает ассоциативный результат выборки, саму выборку, если извлекалось только 1 поле или false, если нет результатов
      */
 
 
 
-    public function getRecord($columns = ['*'], $tableName = '', $where = [], $sort = [])
+    public function getRecord($columns = ['*'], $tableName = '', $where = [], $sort = [], $offset = 0)
     {
 
-        $query = $this->selectColumns($columns);
-
-        $query .= $this->from($tableName);
-
-        $query .= $this->where($where);
-
-        $query .= $this->sort($sort);
-
-
-        $record = $this->executeQuery($query, $where);
+        $this->query = $this->buildQuery($columns, $tableName, $where,  $sort, $offset, 1);
+        $record = $this->executeQuery($this->query, $where);
 
         if ($record){
             $record = $record->fetch(\PDO::FETCH_ASSOC);
 
-            if(count($record) === 1){
+            if(count($record) === 1 && isset($record[$columns])){
                 return  $record[$columns];
             } else{
                 return $record;
@@ -193,9 +186,32 @@ class PdoWrapper extends Connection{
      */
 
 
-    public function getRecords($columns = ['*'], $tableName ='', $where = [],  $sort = [], $offset =0, $limit=0)
+    public function getRecords($columns = ['*'], $tableName ='', $where = [],  $sort = [], $offset = 0, $limit = 0)
     {
 
+        $this->query = $this->buildQuery($columns, $tableName, $where,  $sort, $offset, $limit);
+        $record = $this->executeQuery($this->query, $where);
+
+        if ($record){
+            return $record->fetchAll(\PDO::FETCH_ASSOC);
+        }
+
+        return false;
+    }
+
+
+
+    public function countRecords($tableName = '', $where = [])
+    {
+        $count = $this->getRecords(['COUNT(*) as total'], $tableName, $where);
+
+        return !empty($count[0]) && !empty($count[0]['total']) ? $count[0]['total'] : 0;
+    }
+
+
+
+    private function buildQuery($columns = ['*'], $tableName ='', $where = [],  $sort = [], $offset = 0, $limit=0)
+    {
         $query = $this->selectColumns($columns);
 
         $query .= $this->from($tableName);
@@ -207,13 +223,8 @@ class PdoWrapper extends Connection{
         $query .= $this->limit($offset, $limit);
 
 
-        $record = $this->executeQuery($query, $where);
+        return $query;
 
-        if ($record){
-            return $record->fetchAll(\PDO::FETCH_ASSOC);
-        }
-
-        return false;
     }
 
 
@@ -292,6 +303,7 @@ class PdoWrapper extends Connection{
 
             $query .= implode('AND ', $params);
         }
+        $this->queryParams = $params;
 
         return $query;
     }

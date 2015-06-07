@@ -23,6 +23,7 @@ $dependencies =  [
 
     'classes' => [
         'htmlValidator' => 'web/Html',
+        'paginator' => 'web/Pagination',
 
     ]
 
