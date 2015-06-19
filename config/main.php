@@ -12,11 +12,18 @@ return  [
 
     'debugMode' =>true,
 
+    'transferProtocol'=>'http', // just for future to be sure not change links everywhere
+
     'language' => 'ru',
+
+    'caching' => [
+        'active' => true,
+        'cacheTime' => 300, //in seconds
+    ],
 
     'database' => [
         'host' => 'localhost',
-        'name' => 'myProject',
+        'name' => 'vforme',
         'user' => 'root',
         'password' => ''
     ],
@@ -24,25 +31,42 @@ return  [
     'plugins' => [
         'localization',
         'bootstrap',
-        'password-compat' // used for function  "password_(verify|hash...)" compatibility  in PHP 5.4-5.5
+        'password-compat', // used for function  "password_(verify|hash...)" compatibility  in PHP 5.4-5.5
+        'rating',
+        'translit',
+        'pretty-date',
+        'sb-admin',
     ],
 
+
+    /** Route - RegEx that matches string in url address . Required!
+     *  Action - controllerName/methodName that will be called if route matches url. Required!
+     *  NOTE! method name can be set dynamically by defining between () in RegEx and passing that value so 'action'=>'controllerName/{param_order_index}
+     *  Params - variables matched in route between () . params index shall match order in route.
+     *  NOTE! for example: in route /(\d+)/(one|two)* second parameter(one|two) shall be defined like so 'params'=>[1=>'second_param']
+     *  NOTE! params can be accessed from App::$request['param_name']
+     *  Full - set true if should be checked full request url(not only PHP_URL_PATH)
+    */
+
     'routes' => [
-        ['route' => '~^/*$~', 'action' => 'main/index'],
+        ['route' => '^/?$', 'action' => 'main'],
 
-        ['route' => '~^/admin/add_question$~', 'action' => 'admin/add-question',],
+        ['route' =>'^/login/$', 'action' => 'user/login'],
 
-        ['route' => '~^/api/get_question$~', 'action' => 'api/get-question',],
+        ['route' =>'^/profile/$', 'action' => 'user/profile'],
 
-        ['route' =>'~^/login$~', 'action' => 'user/login'],
+        ['route' =>'^/logout/$', 'action' => 'user/logout'],
 
-        ['route' =>'~^/profile$~', 'action' => 'user/profile'],
+        ['route' => '^/showcase/$', 'action' => 'main/example'],
 
-        ['route' =>'~^/logout$~', 'action' => 'user/logout'],
+        ['route' => '^/(beauty+)/$', 'params'=>['category'], 'action' => 'article/show-articles'],
 
-        ['route' => '~^/showcase$~', 'action' => 'main/example'],
+        ['route' => '^/beauty/([a-zA-Z0-9_]+)\.html$', 'params'=>['link'], 'action' => 'article/show-article'],
+
+        ['route' => '^/API/articles.php\?([a-zA-Z_]+)', 'full'=>true, 'action' => 'api-content-apiArticle/{0}'],
 
         'error_404'=>[
+            'route'=>'*',
             'action' => 'main/error404',
         ]
     ]

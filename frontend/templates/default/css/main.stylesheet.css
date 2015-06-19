@@ -1,0 +1,46 @@
+.article-preview{
+    margin-bottom:20px;
+}
+
+
+
+
+.article-preview-image{
+    width:100%;
+    max-width:200px;
+}
+
+h1.centered{
+    text-align:center;
+}
+
+.article-preview-text{
+    font-size:13px;
+    max-height:240px;
+    overflow: hidden;
+}
+
+
+.article img{
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+.article-date{
+    margin: 5px 0;
+}
+
+.article-rating{
+    margin-top:10px;
+}
+
+.both-clear{
+    clear:both;
+}
+
+
+
+.carousel-inner .item img{
+    margin:auto;
+    max-height:350px
+}

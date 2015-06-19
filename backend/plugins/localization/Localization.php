@@ -77,6 +77,3 @@ class Localization implements Plugin{
     }
 
 }
-
-
-Localization::init();

@@ -1,19 +1,21 @@
 <? use \app\plugins\bootstrap\Bootstrap; ?>
+
+<?
+if($_SERVER['REMOTE_ADDR']!=='123'):
+    $praefect = [
+        'title'=>'Админка',
+        'href'=>'/praefect'
+    ];
+else:
+    $praefect = [];
+endif;
+?>
 <?=Bootstrap::navBar(
     [
+        $praefect,
         [
             'title'=>'Главная',
             'href'=>'/',
-        ],
-
-        [
-            'title'=>'О сайте',
-            'href'=>'/about',
-        ],
-
-        [
-            'title'=>'Контакты',
-            'href'=>'/contacts',
         ],
 
         [
@@ -22,12 +24,12 @@
             'child'=>[
                 [
                     'title'=>'Красота и здоровье',
-                    'href'=>'/beauty',
+                    'href'=>'/beauty/',
                 ],
 
                 [
                     'title'=>'Фитнес',
-                    'href'=>'/fitness',
+                    'href'=>'/fitness/',
                 ],
 
                 [
@@ -43,12 +45,22 @@
 
                 [
                     'title'=>'Кулинария',
-                    'href'=>'/cook'
+                    'href'=>'/cook/'
                 ]
 
 
             ]
-        ]
+        ],
+
+        [
+            'title'=>'О сайте',
+            'href'=>'/about/',
+        ],
+
+        [
+            'title'=>'Контакты',
+            'href'=>'/contacts/',
+        ],
     ],
     'navbar-inverse',
     'vforme'

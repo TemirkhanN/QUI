@@ -9,29 +9,66 @@
 namespace app\core\web;
 
 
+use app\core\App;
+
 class UrlManager {
 
 
-    protected $request;
+    protected $request = ['path'=>'', 'full'=>'']; //current request_uri info
 
-    protected $rules;
+    protected static $rules = []; // matching rules. By default from /config/main.php
 
-    protected $actionRoute = null;
+    protected $actionRoute = null; //detecting action that will be passed to App and called from controller
 
-    protected $params = [];
+    protected $params = []; //params passed through rules
 
 
 
 
     public function __construct($request, $rules)
     {
-        if($request && $rules) {
-            $this->request = $request;
-            $this->rules = $rules;
+        if($request && $rules && is_array($rules)) {
+            $this->request['full'] = $request;
+            $this->request['path'] = parse_url($request, PHP_URL_PATH);
 
-            $this->parseRequest();
+
+
+
+                foreach ($rules as $key => $rule) {
+                    try {
+                        if (self::validateRule($rule) == false) {
+                            unset($rules[$key]);
+                            throw new \Exception('Bad route rule passed to UrlManager');
+                        }
+                    } catch(\Exception $error) {
+                        App::noteError($error);
+                    }
+                }
+            self::$rules = array_merge(self::$rules, $rules);
         }
 
+    }
+
+
+
+    public static function addRule($rule)
+    {
+        if(self::validateRule($rule)) {
+            self::$rules[] = $rule;
+        }
+    }
+
+
+
+
+
+    private static function validateRule($rule = [])
+    {
+        if(!is_array($rule) || empty($rule['route']) || empty($rule['action'])){
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -41,24 +78,34 @@ class UrlManager {
 
     public function parseRequest()
     {
+        try {
+            if (!empty(self::$rules) && !empty($this->request)) {
 
-        $request = $this->request;
+                foreach (self::$rules as $key => $rule) {
+                    $request = isset($rule['full']) && $rule['full'] == true ? $this->request['full'] : $this->request['path'];
+                    if (is_numeric($key) && preg_match('~'.$rule['route'].'~', $request, $match)) {
+                        $this->detectActionRoute($rule, $match);
 
-        foreach ($this->rules as $key=>$rule) {
-            if (is_numeric($key) && preg_match($rule['route'], $request, $match)){
+                        if (!empty($rule['params'])) {
+                            $this->parseParams($rule['params'], $match);
+                        }
+                        break;
+                    }
 
-                $this->detectActionRoute($rule, $match);
-
-                if(!empty($rule['params'])){
-                    $this->parseParams($rule['params'], $match);
                 }
-                break;
+
+                if ($this->actionRoute === null) {
+                    $this->actionRoute = !empty(self::$rules['error_404']['action']) ? self::$rules['error_404']['action'] : 'main/index';
+                }
+
+                return true;
+
+            } else{
+                throw new \Exception('Invalid parameters passed to '.get_class($this));
             }
-
-        }
-
-        if($this->actionRoute === null){
-            $this->actionRoute = !empty($this->rules['error_404']['action']) ? $this->rules['error_404']['action'] : 'main/index';
+        } catch(\Exception $error){
+            App::noteError($error);
+            return false;
         }
 
     }

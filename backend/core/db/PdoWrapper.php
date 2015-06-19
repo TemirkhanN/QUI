@@ -102,7 +102,6 @@ class PdoWrapper extends Connection{
             return $this->lastInsertId();
         }
 
-
     }
 
 
@@ -203,9 +202,9 @@ class PdoWrapper extends Connection{
 
     public function countRecords($tableName = '', $where = [])
     {
-        $count = $this->getRecords(['COUNT(*) as total'], $tableName, $where);
+        $count = $this->getRecord(['COUNT(*) as total'], $tableName, $where);
 
-        return !empty($count[0]) && !empty($count[0]['total']) ? $count[0]['total'] : 0;
+        return !empty($count) && !empty($count['total']) ? $count['total'] : 0;
     }
 
 
@@ -234,10 +233,12 @@ class PdoWrapper extends Connection{
      * @return bool|\PDOStatement
      */
 
-    private function executeQuery($query = '', $params = [])
+    public function executeQuery($query = '', $params = [])
     {
 
         $record = $this->connection->prepare($query);
+
+        array_walk($params, [$this, 'makeWhereParams']);
 
         $record->execute($params);
 
@@ -248,6 +249,23 @@ class PdoWrapper extends Connection{
 
         } else{
             return $record;
+        }
+
+    }
+
+
+
+    private function makeWhereParams($params = [])
+    {
+
+        if(!is_array($params)){
+            return;
+        }
+
+        foreach($params as $key=>$value){
+            if(is_array($value)){
+                $params[$key] = $value[1];
+            }
         }
 
     }
@@ -295,9 +313,17 @@ class PdoWrapper extends Connection{
 
             $query .= ' WHERE ';
 
-            foreach (array_keys($where) as $columnName){
+            foreach ($where as $columnName=>$value){
 
-                $params[] = $columnName .' = :' . $columnName . ' ';
+                if(is_array($value)){
+                    switch(strtoupper($value[0])){
+                        case 'IN':
+                            $params[] = $columnName .' IN(:' . $columnName . ')';
+
+                    }
+                } else{
+                    $params[] = $columnName .' = :' . $columnName . ' ';
+                }
 
             }
 
@@ -307,6 +333,7 @@ class PdoWrapper extends Connection{
 
         return $query;
     }
+
 
 
 

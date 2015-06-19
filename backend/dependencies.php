@@ -19,6 +19,7 @@ $dependencies =  [
         'db' => 'db/Connection',
         'pdo' => 'db/PdoWrapper',
         'activeRecord' => 'db/ActiveRecord',
+        'fileWorker' => 'file-worker/File',
     ],
 
     'classes' => [

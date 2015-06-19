@@ -3,7 +3,8 @@
 
 return [
     'php'=>[
-        'RatingAjaxHandler',
+        'Rating',
+        'RatingController',
     ],
 
     'js'=> [

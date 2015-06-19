@@ -10,6 +10,7 @@ namespace app\core\base;
 
 
 use app\core\App;
+use app\core\file\worker\File;
 use app\core\web\Html;
 
 class Controller
@@ -17,9 +18,11 @@ class Controller
 
     private $allowedViews = ['php', 'html', 'xhtml', 'xml'];
     private $headers = [];
+    private $registeredHeaders = ['css'=>[], 'js'=>[]]; // To avoid duplicate css|js headers
     protected $layout = 'main/main-menu';
     protected $page = 'index';
     protected $content = '';
+    protected $customTemplate = false;
     public $title = '';
     private $templateAbsPath;
     public $templateRelPath;
@@ -34,9 +37,7 @@ class Controller
 
     public function setPage($page)
     {
-        while($pos = strpos($page, '-')){
-            $page = mb_substr($page, 0, $pos).ucfirst(substr($page, $pos+1));
-        }
+        $page =  App::toCamelCase($page);
         $this->page = 'page'.ucfirst($page);
     }
 
@@ -67,8 +68,14 @@ class Controller
 
     public function setHeadMeta($metaData = '')
     {
-        $this->headers[] = $metaData;
+        static $tab = '';
 
+
+        $this->headers[] = $tab.$metaData;
+
+        if($tab === ''){
+            $tab = '    ';
+        }
     }
 
 
@@ -92,8 +99,14 @@ class Controller
 
         $this->templateRelPath = str_ireplace($_SERVER['DOCUMENT_ROOT'], '', $this->templateAbsPath);
 
-        if(method_exists($this, $this->page)){
-            $this->{$this->page}();
+        try {
+            if (method_exists($this, $this->page)) {
+                $this->{$this->page}();
+            } else{
+                throw new \Exception('Method '.$this->page.' does not exist in controller ' . (new \ReflectionClass($this))->getName());
+            }
+        } catch(\Exception $error){
+            App::noteError($error);
         }
 
     }
@@ -109,10 +122,12 @@ class Controller
         try {
             if (in_array($type, $this->allowedViews)) {
 
-                $className = str_replace('Controller', '', (new \ReflectionClass($this))->getShortName());
+                $className = preg_replace('#Controller$#', '', (new \ReflectionClass($this))->getShortName());
+
+                $className = strtolower(preg_replace('#([A-Z]{1})#', '-${1}', lcfirst($className)));
 
 
-                $pageFile = $_SERVER['DOCUMENT_ROOT'] . '/../pages/' . lcfirst($className) . '/' . $page . '.' . $type;
+                $pageFile = $_SERVER['DOCUMENT_ROOT'] . '/../pages/' . $className . '/' . $page . '.' . $type;
 
                 if(file_exists($pageFile)){
 
@@ -185,6 +200,16 @@ class Controller
             foreach($files as $type=>$file){
 
                 foreach($file as $fileData) {
+
+                    $checkDuplicate = isset($this->registeredHeaders[$type][$fileData['fileName']]);
+
+                    $this->registeredHeaders[$type][$fileData['fileName']] = $fileData['path'];
+                    if($checkDuplicate){
+                        continue;
+                    }
+
+
+
                     switch ($type) {
                         case 'js':
                             $this->registerJs($fileData['path'], $fileData);
@@ -213,7 +238,7 @@ class Controller
     {
         if($file){
             $destinationDir = $this->templateAbsPath.'/js/'.$file['folder'];
-            $path = App::copyFileToFolder($path, $destinationDir, $file['fileName'].'.js');
+            $path = File::copyFileToFolder($path, $destinationDir.'/'.$file['fileName'].'.js');
         } else{
             $path = $this->templateRelPath .'/'.$path;
         }
@@ -227,7 +252,7 @@ class Controller
     {
         if($file){
             $destinationDir = $this->templateAbsPath.'/css/'.$file['folder'];
-            $path = App::copyFileToFolder($path, $destinationDir, $file['fileName'].'.css');
+            $path = File::copyFileToFolder($path, $destinationDir.'/'.$file['fileName'].'.css');
         } else{
             $path = $this->templateRelPath .'/'.$path;
         }
@@ -245,11 +270,18 @@ class Controller
             $destinationDir = $this->templateAbsPath;
             if(in_array(strtolower($file['type']), ['jpg','jpeg', 'gif', 'png','bmp'])){
                 $destinationDir .= '/images';
+            } else if(in_array(strtolower($file['type']), ['eot', 'ttf', 'woff', 'woff2', 'fnt', 'svg', 'otf'])){
+                $destinationDir .= '/css';
+            } else{
+                $destinationDir .= '/'.$file['type'];
             }
-            $destinationDir .= '/'.$file['type'];
+
             $destinationDir .= !empty($file['folder']) ? '/'.$file['folder'] : '';
             $fileName = $file['fileName'] . '.' . $file['type'];
-            App::copyFileToFolder($path, $destinationDir, $fileName);
+            File::copyFileToFolder($path, $destinationDir.'/'.$fileName);
+
+
+
         }
     }
 
@@ -319,6 +351,21 @@ class Controller
     public function redirectToController($request = '')
     {
         App::$app->runController($request);
+    }
+
+
+
+
+    public function setCustomTemplate($status = false)
+    {
+        $this->customTemplate = (bool) $status;
+    }
+
+
+
+    public function isCustomTemplate()
+    {
+        return $this->customTemplate;
     }
 
 

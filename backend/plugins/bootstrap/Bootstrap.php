@@ -14,6 +14,9 @@ class Bootstrap
 
     private static $allowedAttributes = ['href', 'title', 'class', 'id'];
 
+
+
+
     public static function navBar($links = [], $class = 'navbar-default', $brand = null)
     {
         $navBar = '<nav class="navbar '.$class.'">';
@@ -53,6 +56,10 @@ class Bootstrap
 
 
         foreach($links as $link){
+
+            if(empty($link)){
+                continue;
+            }
 
             if(isset($link['decorative'])){
                 $link['title'] = isset($link['title']) ? $link['title'] : '';
@@ -97,16 +104,105 @@ class Bootstrap
     }
 
 
+    public static function isActiveLink($url = '')
+    {
+        return self::currentUrlIsActiveLink($url)!='' ? ' class="active"' : '';
+    }
+
+
     private static function generateAttributes($attributes = [])
     {
         $attributes = array_intersect_key($attributes, array_flip(self::$allowedAttributes));
         $att = '';
 
         foreach($attributes as $key=>$value){
-            $att .= ' '.$key.'="'.$value.'""';
+            $att .= ' '.$key.'="'.trim(strip_tags($value)).'"';
         }
 
         return $att;
+
+    }
+
+
+
+
+
+    public static function carouselSlider($items = [], $attributes = [])
+    {
+        $attributes['class'] = !empty($attributes['class']) ? 'carousel slide ' . $attributes['class'] : 'carousel slide';
+        $attributes['id'] = !empty($attributes['id']) ? $attributes['id']  : 'carousel-id-not-set';
+        $attributes['interval'] = !empty($attributes['interval']) ? $attributes['interval']*1000  : false;
+
+
+        $carousel = '
+            <div '.self::generateAttributes($attributes).' class="carousel '.$attributes['class'].' carousel-fit" data-ride="carousel" data-interval="'.$attributes['interval'].'">
+                <ol class="carousel-indicators">
+                    '.self::generateCarouselSwitchers($items, $attributes['id']).'
+                </ol>
+                <div class="carousel-inner" role="listbox">
+                    '.self::generateCarouselSlides($items).'
+                </div>
+                <a class="left carousel-control" href="#' . $attributes['id'] . '" role="button" data-slide="prev">
+                    <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+                    <span class="sr-only">Previous</span>
+                </a>
+                <a class="right carousel-control" href="#' . $attributes['id'] . '" role="button" data-slide="next">
+                    <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+                    <span class="sr-only">Next</span>
+                </a>
+            </div>';
+
+        return $carousel;
+
+    }
+
+
+    private static function generateCarouselSwitchers($items = [], $carouselId = '')
+    {
+        $switchers = '';
+        $total = count($items);
+
+        if($total>0){
+            for($i=0; $i<$total; $i++){
+
+                $active = $i === 0 ? 'class="active"' : '';
+                $switchers.= '<li data-target="#' . $carouselId . '" data-slide-to="'.$i.'" '.$active.'></li>';
+            }
+
+        }
+
+        return $switchers;
+
+    }
+
+
+    private static function generateCarouselSlides($items = [])
+    {
+        $iteratorCount = 0;
+        $slides = '';
+        foreach($items as $item){
+
+            $item['class'] = !empty($item['class']) ? $item['class'] .= ' item' : 'item';
+            $item['href'] = !empty($item['href']) ? $item['href'] : '#';
+            $item['name'] = !empty($item['name']) ? $item['name'] : 'Slide '.($iteratorCount+1);
+
+            if($iteratorCount===0){
+                $item['class'] .= ' active';
+            }
+
+            $slides .= '
+                    <div'.self::generateAttributes($item).'>
+                        <a href="'.$item['href'].'">
+                            <img src="'.$item['image'].'" title="'.$item['name'].'" alt="'.$item['name'].'">
+                        </a>
+                    </div>';
+
+
+
+            ++$iteratorCount;
+        }
+
+        return $slides;
 
     }
 
