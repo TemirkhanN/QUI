@@ -2,10 +2,6 @@
 
 use \app\core\web\Html;
 $this->registerCss('css/main.stylesheet.css');
-$this->setTitle('Женская красота и здоровье - Vforme.su');
-$this->setMetaDesc('Быть красивой и здоровой-легко. Уход за кожей лица, рук и тела. Питание и диеты.');
-$this->setMetaKeys('Красота,krasota, женщины,девушки,здоровье,видеорецепты,диета,уход за волосами, уход за телом,маски для лица,rhfcjnf');
-
 ?>
 <!DOCTYPE html>
 <html lang="ru">

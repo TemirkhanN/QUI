@@ -1,11 +1,11 @@
-.article-preview{
+.content-preview{
     margin-bottom:20px;
 }
 
 
 
 
-.article-preview-image{
+.content-preview-image{
     width:100%;
     max-width:200px;
 }
@@ -14,23 +14,30 @@ h1.centered{
     text-align:center;
 }
 
-.article-preview-text{
+.content-preview-text{
     font-size:13px;
     max-height:240px;
     overflow: hidden;
 }
 
 
-.article img{
+.content img{
     max-width: 100% !important;
     height: auto !important;
 }
 
-.article-date{
+.content-text:after{
+    content: " ";
+    display: block;
+    height: 0;
+    clear: both;
+}
+
+.content-date{
     margin: 5px 0;
 }
 
-.article-rating{
+.content-rating{
     margin-top:10px;
 }
 

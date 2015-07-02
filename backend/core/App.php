@@ -8,8 +8,6 @@
 
 namespace app\core;
 
-
-
 use app\core\web\Html;
 use app\plugins\Localization\Localization;
 
@@ -19,7 +17,6 @@ class App {
     const DEFAULT_LANG = 'en';
 
     public static  $app; //contains the application instance object
-    public static  $cacheDir; //path to cache folder
     private static $config; //application configuration
     public static  $db; //database connection
     private static $debug; //debug information(time and memory spending)
@@ -34,13 +31,14 @@ class App {
 
 
     /**
-     * @param array $config
      * @return object App
      */
-    public static function init($config = [])
+    public static function init()
     {
         if(self::$app == null){
-            self::$app = new self($config);
+            App::requireFile(ROOT_DIR . '/backend/dependencies.php');
+            self::$config = App::requireFile(ROOT_DIR . '/config/main.php');
+            self::$app = new self();
         }
 
         return self::$app;
@@ -48,15 +46,20 @@ class App {
 
 
 
-    private function __construct($config)
+    private function __construct()
     {
         session_start();
-        self::$config = $config;
-        self::$templateDir = $_SERVER['DOCUMENT_ROOT']. '/templates';
+        self::$templateDir = FRONTEND_DIR. '/templates';
         self::$db = new db\PdoWrapper(self::getConfig('database'));
+        if(self::$db->connectedSuccessfully() === false){
+            return false;
+        }
         self::$language = self::getConfig('language');
-        self::$cacheDir = $_SERVER['DOCUMENT_ROOT'] .'/../cache';
         self::$protocol = self::getConfig('transferProtocol') === 'https' ? 'https' : 'http';
+        $this->loadPlugins(self::getConfig('plugins'));
+        $this->loadModels(__DIR__ .'/../models');
+
+        new \app\models\user\User(); //!!! temporarily here
     }
 
 
@@ -66,9 +69,9 @@ class App {
      */
     public static function debugTrack($identifier = '', $force = false)
     {
-        ini_set('display_errors', true);
-        error_reporting(E_ALL & E_WARNING);
         if(self::getConfig('debugMode') || $force){
+            ini_set('display_errors', true);
+            error_reporting(E_ALL & E_WARNING);
             self::$debug['timeTracker'][$identifier] = microtime(true);
         }
     }
@@ -124,9 +127,6 @@ class App {
 
         if(self::$errors == null){
             if(self::$db->connectedSuccessfully()) {
-
-                $this->loadPlugins(self::getConfig('plugins'));
-                $this->loadModels(__DIR__ .'/../models');
 
                 $urlManager = new web\UrlManager($_SERVER['REQUEST_URI'], self::getConfig('routes'));
                 if($urlManager->parseRequest()) {
@@ -325,7 +325,7 @@ class App {
 
 
 
-    protected function initializePlugin($pluginName = '')
+    protected static function initializePlugin($pluginName = '')
     {
         $pluginClass = str_replace('-', '\\', 'app\plugins\\' . $pluginName .'\\'. self::toCamelCase($pluginName));
         if(class_exists($pluginClass) && method_exists($pluginClass, 'init')){
@@ -558,69 +558,6 @@ class App {
         return Html::encode($text);
     }
 
-
-    /**
-     * @param string $fileName
-     * @param string $cachingData
-     * @param null $dir folder in cache dir if needed
-     * @return bool|string returns false if error occurred or cache file absolute path if success.
-     */
-    public static function saveCache($fileName = '', $cachingData = '', $dir = null)
-    {
-
-        $dir = $dir!=null ? str_replace('..', '', $dir) : null;
-        $dir = $dir != null ? self::$cacheDir . '/content/' . $dir . '' : self::$cacheDir . '/content';
-
-        $destination = $dir . '/' . $fileName . '.so';
-
-        if (!is_dir($dir)){
-            mkdir($dir, 0775, true);
-        }
-
-        if (file_put_contents($destination, $cachingData)){
-            return $destination;
-        }
-
-        return false;
-
-    }
-
-
-
-
-    private static function cacheExpired($path = '')
-    {
-
-        $cacheSettings = self::getConfig('caching');
-
-
-        if(filemtime($path) > time() - $cacheSettings['cacheTime']){
-            return true;
-        }
-
-        return false;
-    }
-
-
-    /**
-     * @param string $fileName
-     * @param null $dir if needed cache from specified folder
-     * @return bool|string returns cacheFile if succeed or false if error occurred.
-     */
-    public static function getCache($fileName = '', $dir = null)
-    {
-
-        $dir = $dir!=null ? str_replace('..', '', $dir): null;
-        $dir = $dir != null ? self::$cacheDir . '/content/' . $dir . '' : self::$cacheDir . '/content';
-
-        $cacheFile = $dir . '/' . $fileName . '.so';
-
-        if(file_exists($cacheFile) && !self::cacheExpired($cacheFile)){
-            return file_get_contents($cacheFile);
-        } else{
-            return false;
-        }
-    }
 
 
 }

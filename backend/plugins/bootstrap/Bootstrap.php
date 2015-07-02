@@ -206,4 +206,70 @@ class Bootstrap
 
     }
 
+
+
+
+
+    public static function table($schema = [], $items = [], $attributes = [])
+    {
+        $attributes['class'] = !empty($attributes['class']) ? 'table ' . $attributes['class'] : 'table';
+        $table = '<table '.self::generateAttributes($attributes).'>';
+        $table .= '<thead>'.self::generateTableRow($schema, 'th').'</thead>';
+
+        $table .= '<tbody>';
+        foreach($items as $item){
+
+            $table .= self::generateTableRow($item, 'td');
+        }
+        $table .= '</tbody>';
+
+        $table .= '</table>';
+
+        return $table;
+
+    }
+
+    private static function generateTableRow($rowData = [], $type = 'td')
+    {
+        $tr = '<tr>';
+        foreach($rowData as $data){
+            $tr .= '<'.$type.'>'.$data.'</'.$type.'>';
+        }
+        $tr .= '</tr>';
+
+        return $tr;
+    }
+
+
+
+
+
+
+    public static function breadcrumbs($breadcrumbs = [])
+    {
+
+        $html = '<ol class="breadcrumb">';
+
+        if(!empty($breadcrumbs) && is_array($breadcrumbs)){
+            $totalChains = count($breadcrumbs);
+            $currentChain = 0;
+
+            foreach($breadcrumbs as $breadcrumb){
+                ++$currentChain;
+                $html .= $currentChain===$totalChains ? '<li class="active">' : '<li>';
+                $html .= !empty($breadcrumb['icon']) ? $breadcrumb['icon'].' ' : '';
+                $html .= !empty($breadcrumb['href']) && $currentChain!==$totalChains ? '<a href="'.$breadcrumb['href'].'">' : '';
+                $html .= !empty($breadcrumb['title']) ? $breadcrumb['title'] : 'пустая цепочка';
+                $html .= $currentChain!==$totalChains ? '</a>' : '';
+                $html .= '</li>';
+
+            }
+        }
+        $html .= '</ol>';
+
+
+        return $html;
+
+    }
+
 }

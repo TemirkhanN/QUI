@@ -18,7 +18,7 @@ class MainController extends Controller {
     //Главная страница сайта
     public function pageIndex()
     {
-        $this->redirectToController('article/index');
+        $this->redirectToController('content/index');
 
     }
 

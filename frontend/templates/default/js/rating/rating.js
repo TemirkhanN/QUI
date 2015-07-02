@@ -35,7 +35,7 @@ function Rating(){
 
 
         if(target in this.userVoteInfo && targetId in this.userVoteInfo[target]){
-            totalVoters = this.userVoteInfo[target][targetId]['total_voters'] != undefined ? Number(this.userVoteInfo[target][targetId]['total_voters']) : 0;
+            totalVoters = this.userVoteInfo[target][targetId]['totalVoters'] != undefined ? Number(this.userVoteInfo[target][targetId]['totalVoters']) : 0;
             totalRate = this.userVoteInfo[target][targetId]['rating'] != undefined ? Number(this.userVoteInfo[target][targetId]['rating']) : 0;
         }
 
@@ -71,7 +71,7 @@ function Rating(){
 
 			//On rating block hover change its size and background image
 			$(ratingContainer).mousemove(function(event){
-                if(_this.userCanVote(target, targetId) == false) {
+                if(_this.userCanVote(target, targetId) === false) {
                     return;
                 }
 				var hoverRateWidth = Math.ceil((event.clientX-elementOffset(ratingContainer).x)/_this.ratingPointSize.width)*_this.ratingPointSize.width;
@@ -150,9 +150,14 @@ function Rating(){
 
     // Returns bool if user can vote to target
     this.userCanVote = function(target, targetId){
-        return !(target in this.userVoteInfo && targetId in this.userVoteInfo[target] && this.userVoteInfo[target][targetId]['rating']>0);
+        if(target in this.userVoteInfo === false || targetId in this.userVoteInfo[target] === false){
+            return true;
+        }
+
+        return !this.userVoteInfo[target][targetId]['userVoted'];
+
     };
-	
+
 
 
 
@@ -184,7 +189,11 @@ function Rating(){
                     _this.userVoteInfo[target][targetId] = {};
                 }
 
-                _this.userVoteInfo[target][targetId] = {'target':target, 'target_id':targetId, 'rating':rate};
+                if('totalVoters' in _this.userVoteInfo[target][targetId] == false){
+                    _this.userVoteInfo[target][targetId]['totalVoters'] = 0;
+                }
+
+                _this.userVoteInfo[target][targetId] = {'target':target, 'userVoted':true, 'totalVoters': _this.userVoteInfo[target][targetId]['totalVoters']++, 'targetId':targetId, 'rating':rate};
                 return true;
             },
             error:function(){

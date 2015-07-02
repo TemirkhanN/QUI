@@ -17,12 +17,14 @@ class SbAdmin implements  Plugin
 {
 
 
+    private static $rightSideMenu = false; //menu position. if true menu will be on right side
+
+
     //This add-on has too much css and js files that need to be included only on admin page. So dependencies will be included only from controller
     private static $dependencies = [
         'css' => ['bootstrap.min',
             'font-awesome.min',
             'sb-admin',
-            'sb-admin-rtl',
             'morris',
         ],
 
@@ -56,6 +58,10 @@ class SbAdmin implements  Plugin
 
     public static function loadDependencies()
     {
+        if(self::$rightSideMenu) {
+            self::$dependencies['css'][] = 'sb-admin-rtl';
+        }
+
         App::loadPluginDependencies('sb-admin', self::$dependencies);
     }
 

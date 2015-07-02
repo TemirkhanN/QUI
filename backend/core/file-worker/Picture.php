@@ -26,7 +26,7 @@ class Picture{
 
 
 	public function __construct($directory = 'articles/preview/', $imgResize = array(280,210)){
-		$this->dir = $_SERVER['DOCUMENT_ROOT'].'/images/'.$directory;
+		$this->dir = ROOT_DIR.'/images/'.$directory;
 		$this->imgTypes = array('jpg', 'jpeg', 'gif', 'png');
 		
 		//Если необходимая ширина и высота выше максимально возможных
@@ -115,7 +115,7 @@ class Picture{
 				if($isPreview){
 					$destination = $this->dir.$imgName;
 				}else{
-					$destination = $_SERVER['DOCUMENT_ROOT'].$imgName; //Путь для сохранения файла
+					$destination = ROOT_DIR.$imgName; //Путь для сохранения файла
 				}
 			}
 			

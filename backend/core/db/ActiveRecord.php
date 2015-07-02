@@ -136,7 +136,6 @@ class ActiveRecord{
     {
         foreach($data as $name=>$value){
 
-
             if($type == self::ARR) {
                 if(strpos($name, $this->_information['namespace'])){
                     unset($data[$name]);

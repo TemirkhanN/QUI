@@ -97,7 +97,7 @@ class Controller
 
         $this->setTitle($title);
 
-        $this->templateRelPath = str_ireplace($_SERVER['DOCUMENT_ROOT'], '', $this->templateAbsPath);
+        $this->templateRelPath = str_ireplace(FRONTEND_DIR, '', $this->templateAbsPath);
 
         try {
             if (method_exists($this, $this->page)) {
@@ -127,7 +127,7 @@ class Controller
                 $className = strtolower(preg_replace('#([A-Z]{1})#', '-${1}', lcfirst($className)));
 
 
-                $pageFile = $_SERVER['DOCUMENT_ROOT'] . '/../pages/' . $className . '/' . $page . '.' . $type;
+                $pageFile = ROOT_DIR . '/views/pages/' . $className . '/' . $page . '.' . $type;
 
                 if(file_exists($pageFile)){
 
@@ -313,10 +313,10 @@ class Controller
     public function layout($layoutName = '')
     {
         $layoutName = trim($layoutName);
-        if(empty($layoutName) || !file_exists($_SERVER['DOCUMENT_ROOT'] . '/../layouts/' . $layoutName . '.php')){
-            $layoutName = $_SERVER['DOCUMENT_ROOT'] . '/../layouts/' . $this->layout . '.php';
+        if(empty($layoutName) || !file_exists(ROOT_DIR . '/views/layouts/' . $layoutName . '.php')){
+            $layoutName = ROOT_DIR . '/views/layouts/' . $this->layout . '.php';
         } else{
-            $layoutName = $_SERVER['DOCUMENT_ROOT'] . '/../layouts/' . $layoutName . '.php';
+            $layoutName = ROOT_DIR . '/views/layouts/' . $layoutName . '.php';
         }
         include $layoutName;
     }
