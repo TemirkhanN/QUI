@@ -32,7 +32,7 @@ class File {
             copy($from, $to);
         }
 
-        $to = str_ireplace($_SERVER['DOCUMENT_ROOT'], '', $to);
+        $to = str_ireplace(FRONTEND_DIR, '', $to);
 
         return $to;
 

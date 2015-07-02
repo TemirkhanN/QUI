@@ -11,7 +11,7 @@ namespace app\core\base;
 use app\core\web\Html;
 
 
-class FormBuilder {
+class Form {
 
     private $formStart;
     private $field;
@@ -117,6 +117,15 @@ class FormBuilder {
                 $this->fieldNumber($params);
                 break;
 
+            case 'password':
+                $this->fieldPassword($params);
+                break;
+
+            case 'email':
+                $this->fieldEmail($params);
+                break;
+
+
             case 'select':
                 //
                 break;
@@ -153,6 +162,35 @@ class FormBuilder {
 
         $this->field .= '>';
 
+
+    }
+
+
+    protected function fieldPassword($params)
+    {
+
+        $params['type'] = 'password';
+
+        $this->field = '<input';
+
+        $this->writeFieldParams($params);
+
+        $this->field .= '>';
+
+    }
+
+
+
+    protected function fieldEmail($params)
+    {
+
+        $params['type'] = 'email';
+
+        $this->field = '<input';
+
+        $this->writeFieldParams($params);
+
+        $this->field .= '>';
 
     }
 

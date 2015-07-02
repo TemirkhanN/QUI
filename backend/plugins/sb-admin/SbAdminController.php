@@ -53,6 +53,16 @@ class SbAdminController extends Controller
         $this->renderPage('tables');
     }
 
+
+
+    public function pageContent()
+    {
+        App::switchOffDebug();
+        SbAdmin::loadDependencies();
+        $this->setCustomTemplate(true);
+        $this->renderPage('content');
+    }
+
     public function pageGrids()
     {
         App::switchOffDebug();

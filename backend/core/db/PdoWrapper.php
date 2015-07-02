@@ -22,9 +22,7 @@ class PdoWrapper extends Connection{
 
         try{
             $db = new \PDO('mysql:host=' . $config['host'] . ';dbname=' . $config['name'] . ';charset=utf8', $config['user'], $config['password']);
-
         } catch(\PDOException $e){
-
             App::noteError($e);
         }
 
@@ -162,7 +160,7 @@ class PdoWrapper extends Connection{
         if ($record){
             $record = $record->fetch(\PDO::FETCH_ASSOC);
 
-            if(count($record) === 1 && isset($record[$columns])){
+            if(count($record) === 1 && !is_array($columns) && isset($record[$columns])){
                 return  $record[$columns];
             } else{
                 return $record;

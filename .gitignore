@@ -45,12 +45,3 @@ Temporary Items
 #Ide directory
 .idea
 backup/
-backend/controllers/Api*
-backend/controllers/Article*
-frontend/images/articles/
-frontend/templates/default/krasota
-pages
-!pages/main
-cache
-backend/models
-config

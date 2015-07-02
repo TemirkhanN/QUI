@@ -9,11 +9,13 @@
 namespace app\models\user;
 
 
+use app\core\App;
 use app\core\base\Model;
 
-class User extends Model {
+class User extends Model
+{
 
-    public $authorized;
+    private $authorized;
     public $data;
     private static $instance;
 
@@ -31,11 +33,38 @@ class User extends Model {
 
 
 
+
+    private function initializeUserTable()
+    {
+        if(App::$db->checkTableExist('user') === false){
+            App::$db->query("CREATE TABLE IF NOT EXISTS `user` (
+                `id` INT(11) AUTO_INCREMENT,
+                `login` VARCHAR(255) NOT NULL DEFAULT '',
+                `password` VARCHAR(255) NOT NULL DEFAULT '',
+                `privileges` VARCHAR(20) NOT NULL DEFAULT 'user',
+                `regdate` DATETIME NOT NULL,
+                PRIMARY KEY(`id`),
+                UNIQUE KEY `login` (`login`)
+               ) ENGINE=InnoDB  DEFAULT CHARSET=utf8
+            ");
+            App::$db->addRecord(['login'=>'admin', 'password'=>password_hash('admin', PASSWORD_DEFAULT), 'privileges'=>'admin'], 'user');
+
+        }
+
+
+    }
+
+
+
+
+
     public function logIn($login = '', $password = '')
     {
 
         if(!$this->authorized) {
             if ($this->validateLogin($login) && $this->validatePassword($password)) {
+
+                self::initializeUserTable();
 
                 $user = new \app\models\database\User();
                 $user->getRecord(['login' => $login]);
@@ -46,14 +75,14 @@ class User extends Model {
                     $this->saveAuthorization((array) $user);
                     return true;
                 } else {
-                    $this->logError('logIn', 'Пользователя с таким логином или паролем не существует');
+                    $this->logError('logIn', "User doesn't exist");
                 }
 
             } else {
                 return array_merge($this->returnErrors('validatePassword'), $this->returnErrors('validateLogin'));
             }
         } else{
-            $this->logError('logIn', 'Вы уже авторизованы');
+            $this->logError('logIn', "You're already authorized");
         }
 
 
@@ -68,7 +97,7 @@ class User extends Model {
         $valid = true;
 
         if (empty($password)){
-            $this->logError('validatePassword', 'Пароль пуст');
+            $this->logError('validatePassword', 'Password is empty');
             $valid = false;
         }
 
@@ -81,7 +110,7 @@ class User extends Model {
     {
         $valid = true;
         if(empty($login)){
-            $this->logError('validateLogin', 'Логин пуст');
+            $this->logError('validateLogin', 'Login is empty');
         }
 
         return $valid;
@@ -93,7 +122,6 @@ class User extends Model {
     private function checkAuthorization()
     {
         if(!empty($_SESSION['user'])){
-
             if(empty($this->data)){
                 $this->data = $_SESSION['user'];
             }
@@ -105,9 +133,33 @@ class User extends Model {
     }
 
 
+
+
+    public static function authorized()
+    {
+        return self::$instance == null ? false : self::$instance;
+    }
+
+
+
+
     private function saveAuthorization($userData = [])
     {
         $_SESSION['user'] = $userData;
+    }
+
+
+
+
+
+    public static function hasRights($rights = 'user')
+    {
+
+        if(self::authorized() === false){
+            return false;
+        }
+
+        return  !empty($_SESSION['user']['privileges']) && $_SESSION['user']['privileges'] == $rights;
     }
 
 
@@ -131,7 +183,7 @@ class User extends Model {
         if($user = $user->getRecord(['id' => $userId], $user::OBJ)){
             return $user;
         } else{
-            $this->logError('getProfile', 'Пользователя с таким ид не существует');
+            $this->logError('getProfile', "user with such identifier doesn't exist");
             return $this->returnErrors('getProfile');
         }
     }

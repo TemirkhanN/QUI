@@ -22,18 +22,20 @@ class UserController extends Controller {
         $errors = null;
 
 
-        if(!$user->authorized) {
+        if(!$user->authorized()) {
             if (isset($_POST['log_in'])) {
                 $loggedIn = $user->logIn($_POST['login'], $_POST['password']);
                 if ($loggedIn === true) {
-                    $this->redirect("/profile");
+                    $this->redirect("/");
                 } else {
                     $errors = $loggedIn;
                 }
             }
-        } else{
-            $this->redirect("/profile");
+        } else {
+            $this->redirect("/");
         }
+
+        $this->setCustomTemplate(true);
 
         $this->renderPage('login', [
                 'login_errors'=>$errors,

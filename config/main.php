@@ -23,7 +23,7 @@ return  [
 
     'database' => [
         'host' => 'localhost',
-        'name' => 'vforme',
+        'name' => 'beauty',
         'user' => 'root',
         'password' => ''
     ],
@@ -59,11 +59,11 @@ return  [
 
         ['route' => '^/showcase/$', 'action' => 'main/example'],
 
-        ['route' => '^/(beauty+)/$', 'params'=>['category'], 'action' => 'article/show-articles'],
+        ['route' => '^/(beauty+)/$', 'params'=>['category'], 'action' => 'content/show-contents'],
 
-        ['route' => '^/beauty/([a-zA-Z0-9_]+)\.html$', 'params'=>['link'], 'action' => 'article/show-article'],
+        ['route' => '^/beauty/([a-zA-Z0-9_]+)\.html$', 'params'=>['link'], 'action' => 'content/show-content'],
 
-        ['route' => '^/API/articles.php\?([a-zA-Z_]+)', 'full'=>true, 'action' => 'api-content-apiArticle/{0}'],
+        ['route' => '^/API/content.php\?([a-zA-Z_]+)', 'full'=>true, 'action' => 'api-content-apiContent/{0}'],
 
         'error_404'=>[
             'route'=>'*',
