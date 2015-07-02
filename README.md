@@ -8,6 +8,18 @@ Not documented, not stable, not even alpha. Keeping coding.
 
 I'll be extremely thankful If you tell me about issues and ways to make it better or even how things shall not be done.
 
-UPD
-from next commit every file and db dump will be included in this branch
-project can be seen here http://vforme.su
+
+Finally in pre-alpha. You may clone repository, import database dump, configure connection to it in /config/main.php and configure your website document_root to /frontend/ (yep, tis similar to yii).
+
+
+login page at
+site.com/login/
+
+admin page at
+site.com/praefect/
+
+login and pass are "admin".
+
+Admin-panel is empty(only layout for future). I don't know how to architect it correctly.
+
+As I already said I'll be thankful to u if you report issues and give advices.
