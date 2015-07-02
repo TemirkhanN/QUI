@@ -18,32 +18,26 @@ class App {
 
     const DEFAULT_LANG = 'en';
 
-    public static $app; //Contains the application object
-    private static $config;
-    public static $db;
-    private static $dependencies;
-    public static $plugins;
-    public static $templateDir;
-    public static $templateHeaders; // Contains js, css and other data that shall be included in application template
-    private static $errors;
-    private static $debug;
-    public static $language = self::DEFAULT_LANG;
+    public static  $app; //contains the application instance object
+    public static  $cacheDir; //path to cache folder
+    private static $config; //application configuration
+    public static  $db; //database connection
+    private static $debug; //debug information(time and memory spending)
+    private static $dependencies; //list of application required and included dependencies
+    private static $errors; // errors occurred during application run
+    public static  $templateDir; //application template(view) folder
+    public static  $templateHeaders; // contains js, css and other data that shall be included in application template header
+    public static  $language = self::DEFAULT_LANG;
+    public static  $request; //contains parsed from $_SERVER['REQUEST_URI'] parameters that ruled in config routes
+    public static  $plugins; //list of loaded plugins
+    public static  $protocol; //using transfer protocol(http || https)
 
 
-
-
-
-    private function __construct($config)
-    {
-        self::$config = $config;
-        self::$templateDir = $_SERVER['DOCUMENT_ROOT']. '/templates';
-        self::$db = new db\PdoWrapper(self::getConfig('database'));
-        self::$language = self::getConfig('language');
-    }
-
-
-
-    public static function init($config)
+    /**
+     * @param array $config
+     * @return object App
+     */
+    public static function init($config = [])
     {
         if(self::$app == null){
             self::$app = new self($config);
@@ -53,15 +47,39 @@ class App {
     }
 
 
-    public static function debugTimeTrack($identifier = '', $force = false)
+
+    private function __construct($config)
     {
+        session_start();
+        self::$config = $config;
+        self::$templateDir = $_SERVER['DOCUMENT_ROOT']. '/templates';
+        self::$db = new db\PdoWrapper(self::getConfig('database'));
+        self::$language = self::getConfig('language');
+        self::$cacheDir = $_SERVER['DOCUMENT_ROOT'] .'/../cache';
+        self::$protocol = self::getConfig('transferProtocol') === 'https' ? 'https' : 'http';
+    }
+
+
+    /**
+     * @param string $identifier if needed to track from different places
+     * @param bool $force if needed debug even it turned off in config
+     */
+    public static function debugTrack($identifier = '', $force = false)
+    {
+        ini_set('display_errors', true);
+        error_reporting(E_ALL & E_WARNING);
         if(self::getConfig('debugMode') || $force){
             self::$debug['timeTracker'][$identifier] = microtime(true);
         }
     }
 
 
-    public static function debugShowTimeTrack($identifier = '', $force = false)
+    /**
+     * @param string $identifier of needed to see tracker with identifier
+     * @param bool $force to show debug even if it turned off
+     * @return int|float if error occurred returns 999 seconds.
+     */
+    public static function debugShowTrack($identifier = '', $force = false)
     {
         if(self::getConfig('debugMode') || $force){
 
@@ -80,16 +98,23 @@ class App {
     }
 
 
+    public static function switchOffDebug()
+    {
+        self::$config['debugMode'] = false;
+    }
+
+
 
     public static function debugInfo()
     {
 
         if(self::getConfig('debugMode')) {
-            echo PHP_EOL . '<br>time wasted ' . App::debugShowTimeTrack('mainTracker') . ' sec';
+            echo PHP_EOL . '<br>time wasted ' . App::debugShowTrack('mainTracker') . ' sec';
             echo PHP_EOL . '<br>memory used ' . round(memory_get_usage() / 1024) . ' kb';
             echo PHP_EOL . '<br>memory peak ' . round(memory_get_peak_usage(true) / 1024) . ' kb';
         }
     }
+
 
 
 
@@ -100,13 +125,20 @@ class App {
         if(self::$errors == null){
             if(self::$db->connectedSuccessfully()) {
 
-
                 $this->loadPlugins(self::getConfig('plugins'));
                 $this->loadModels(__DIR__ .'/../models');
 
-                $route = (new web\UrlManager($_SERVER['REQUEST_URI'], self::getConfig('routes')))->getRoute();
+                $urlManager = new web\UrlManager($_SERVER['REQUEST_URI'], self::getConfig('routes'));
+                if($urlManager->parseRequest()) {
 
-                $this->runController($route['action']);
+                    $route = $urlManager->getRoute();
+
+
+                    self::$request['url'] = $urlManager->getRequestParams();
+                    $this->fillRequestData();
+
+                    $this->runController($route);
+                }
             }
         }
 
@@ -117,7 +149,30 @@ class App {
 
 
 
+    private function fillRequestData()
+    {
+        self::$request['cookies'] = &$_COOKIE;
+        self::$request['get'] = &$_GET;
+        self::$request['post'] = &$_POST;
+    }
 
+
+
+
+    public static function toCamelCase($word = '')
+    {
+        while($pos = strpos($word, '-')){
+            $word = mb_substr($word, 0, $pos).ucfirst(substr($word, $pos+1));
+        }
+
+        return ucfirst($word);
+    }
+
+
+    /**
+     * @param null $conf can be set to ['configName', 'anotherName',...] or 'configName'
+     * @return array|bool|null if arg passed as array returns ['configName'=>$confValue,..] else returns $confValue
+     */
     public static function getConfig($conf = null)
     {
         if (self::$config !== null) {
@@ -150,12 +205,12 @@ class App {
     }
 
 
-
-
-    public static function requireFile($filePath)
+    /**
+     * @param string $filePath path to file that shall be required
+     * @return bool|mixed returns false if somehow troubled to require file
+     */
+    public static function requireFile($filePath = '')
     {
-
-
         try {
             if (file_exists($filePath)) {
 
@@ -175,41 +230,93 @@ class App {
     }
 
 
-
+    /**
+     * requires and initializes plugin from /backend/plugins by folder name passed
+     * @param string $name for example 'bootstrap'
+     */
     protected static function loadPlugin($name = '')
     {
         try {
-            $pluginFiles = self::requireFile(__DIR__ . '/../plugins/' . $name . '/plugin-dependencies.php');
-            self::$plugins[$name] = true;
+            if(file_exists(__DIR__ . '/../plugins/' . $name . '/plugin-dependencies.php')) {
+                if(!isset(self::$plugins[$name])) {
 
-            if ($pluginFiles) {
-                foreach ($pluginFiles as $type => $files) {
-                    if ($type == 'php') {
-                        foreach ($files as $fileName) {
-                            self::requireFile(__DIR__ . '/../plugins/' . $name . '/' . $fileName . '.php');
-                        }
-                    } else {
-                        foreach ($files as $fileName) {
-                            $path = __DIR__ . '/../plugins/' . $name . '/' . $type . '/' . $fileName . '.' . $type;
-                            self::$templateHeaders[$type][] = [
-                                'path' => $path,
-                                'type' => $type,
-                                'fileName' => $fileName
-                            ];
-                        }
+                    $pluginFiles = self::requireFile(__DIR__ . '/../plugins/' . $name . '/plugin-dependencies.php');
 
-                    }
+                    self::$plugins[$name] = true;
+                    self::loadPluginDependencies($name, $pluginFiles);
 
+                } else{
+                    throw new \Exception('Duplicate plugin include for  "'. $name .'"');
                 }
+
+
+            } elseif(file_exists(__DIR__ . '/../plugins/' . $name . '/'.self::toCamelCase($name).'.php')){
+                self::requireFile(__DIR__ . '/../plugins/' . $name . '/'.self::toCamelCase($name).'.php');
             }
+            self::initializePlugin($name);
+
         } catch(\Exception $e){
             self::noteError($e);
         }
     }
 
 
+    /**
+     * @param string $name plugin name
+     * @param array $pluginFiles files passed by array ['css'=>['someFile',...], 'js'=>['someFile',..], 'fonts'=>['someFont.ttf',..]]
+     */
+    public static function loadPluginDependencies($name = '', $pluginFiles = [])
+    {
+        if (!empty($pluginFiles) && is_array($pluginFiles)) {
+            foreach ($pluginFiles as $type => $files) {
 
-    protected function loadPlugins($plugins)
+                switch($type){
+                    case 'php':
+                        foreach ($files as $fileName) {
+                            self::requireFile(__DIR__ . '/../plugins/' . $name . '/' . $fileName . '.php');
+                        }
+                        break;
+
+                    case 'css':
+                    case 'js':
+                        foreach ($files as $fileName) {
+                            $path = __DIR__ . '/../plugins/' . $name . '/' . $type . '/' . $fileName . '.' . $type;
+                            self::$templateHeaders[$type][] = [
+                                'path' => $path,
+                                'type' => $type,
+                                'fileName' => $fileName,
+                                'folder' => $name
+                            ];
+                        }
+                        break;
+
+                    case 'fonts':
+                        foreach ($files as $fileName) {
+                            $path = __DIR__ . '/../plugins/' . $name . '/' . $type . '/' . $fileName;
+                            self::$templateHeaders[$type][] = [
+                                'path' => $path,
+                                'type' => substr($fileName, strpos($fileName, '.')+1),
+                                'fileName' => substr($fileName, 0, strpos($fileName, '.')),
+                                'folder' => 'fonts',
+                            ];
+                        }
+                        break;
+
+                    default:
+
+                        break;
+                }
+
+            }
+        }
+    }
+
+
+
+
+
+
+    protected function loadPlugins($plugins = [])
     {
         if (is_array($plugins)){
             array_walk($plugins, 'self::loadPlugin');
@@ -218,9 +325,28 @@ class App {
 
 
 
+    protected function initializePlugin($pluginName = '')
+    {
+        $pluginClass = str_replace('-', '\\', 'app\plugins\\' . $pluginName .'\\'. self::toCamelCase($pluginName));
+        if(class_exists($pluginClass) && method_exists($pluginClass, 'init')){
+            $pluginClass::init();
+        }
+
+    }
 
 
-    protected function loadModels($modelsDir = null)
+
+    public static function pluginIsActive($pluginName = '')
+    {
+        return isset(self::$plugins[$pluginName]) && self::$plugins[$pluginName];
+    }
+
+
+    /**
+     * @param string $modelsDir path to models directory.
+     * requires models classes recursively from directory. Default /backend/models
+     */
+    protected function loadModels($modelsDir = '')
     {
         $modelsDirs  = glob($modelsDir . '/*', GLOB_ONLYDIR);
 
@@ -240,7 +366,13 @@ class App {
     }
 
 
-
+    /**
+     * NOTE! Dependencies lay only under core folder. Everything out of this is not dependency.
+     * @param string $dependency name of dependency . base/Plugin
+     * @param string $type dependency classification. runtime, classes and etc. It is for only tracking for now.
+     * @param string $path path to dependency file. starts from core folder. For example file under /backend/core/web/SomeClass.php
+     * shall be set as web/SomeClass
+     */
     protected static function loadDependency($dependency, $type, $path)
     {
 
@@ -252,8 +384,10 @@ class App {
     }
 
 
-
-
+    /**
+     * @param array $dependencies requires all set dependencies from /backend/dependencies.php
+     * @param null $type this is for only tracking what is required in total. Contains associative key for dependencies group.
+     */
     public static function loadDependencies($dependencies, $type = null)
     {
 
@@ -271,20 +405,61 @@ class App {
     }
 
 
-
+    /**
+     * @param string $action contains controllerName || ControllerName/actionName arg.  'ControllerName/actionName'
+     * if only controllerName set it will require index action that equals to ControllerClass->pageIndex()
+     */
     public function runController($action = '')
     {
+        if(strpos($action, '/')) {
+            list($controller, $page) = explode('/', $action);
+        } else{
+            list($controller, $page) = [$action, 'index'];
+        }
 
-        list($controller, $page) = explode('/', $action);
+        while($controllerInSubDir = strpos($controller,'-')){
+            $leastString = mb_strcut($controller, $controllerInSubDir+1); //What passed after matching - . At least shall stay only real controller name
+            $controller = mb_strcut($controller, 0, $controllerInSubDir).'/'.$leastString;
+        }
 
-        $controller = ucfirst($controller);
-        self::requireFile(__DIR__ .'/../controllers/' . $controller . 'Controller.php');
+        if(isset($leastString)){
+            $controller = mb_strcut($controller, 0, mb_strlen($controller) - mb_strlen($leastString));
+            $controller .= ucfirst($leastString);
+            $controllerName = ucfirst($leastString);
+        } else{
+            $controller = ucfirst($controller);
+            $controllerName = $controller;
+        }
 
 
-        $cName = '\\app\\controllers\\' . $controller . 'Controller';
+        $cName = '\\app\\controllers\\' . $controllerName . 'Controller';
 
-        $theme = self::$db->getRecord('parameter', 'fm_conf', ['name' => 'theme']);
-        $siteName = self::$db->getRecord('parameter', 'fm_conf', ['name' => 'site_title']);
+
+        /*
+            Checks if class already required.
+            for now this exists only cause of plugins that require their controllers through plugin-dependencies
+        */
+        if(!class_exists($cName)) {
+            self::requireFile(__DIR__ . '/../controllers/' . $controller . 'Controller.php');
+        }
+
+
+
+
+        if(self::$db->checkTableExist('fm_conf') === false){
+            self::$db->query("CREATE TABLE IF NOT EXISTS `fm_conf` (
+                                  `id` INT(11) AUTO_INCREMENT,
+                                  `name` VARCHAR (50) NOT NULL DEFAULT '',
+                                  `parameter` VARCHAR(100) NOT NULL DEFAULT '',
+                                  PRIMARY KEY (`id`),
+                                  UNIQUE (`name`)
+                              ) ENGINE=InnoDB");
+            $theme = null;
+            $siteName = "Set default sitename in `fm_conf`";
+        } else{
+            $theme = self::$db->getRecord('parameter', 'fm_conf', ['name' => 'theme']);
+            $siteName = self::$db->getRecord('parameter', 'fm_conf', ['name' => 'site_title']);
+        }
 
         if($theme && !empty($theme->parameter)){
             $theme = $theme->parameter;
@@ -298,41 +473,19 @@ class App {
 
         $controller = new $cName(self::$templateDir); // Initializing controller's template directory
 
-        $controller->setTheme($theme);
-
-        $controller->setPage($page);
-
-        $controller->setTitle($siteName);
-
-        $controller->run();
-
-    }
 
 
-    public static function copyToTemplateFolder($path, $fileType, $fileName)
-    {
-        $fileDir = self::$templateDir . '/' . $fileType;
-        $fileShallExistPath = $fileDir .'/'. $fileName. '.' . $fileType;
-        if(!file_exists($fileShallExistPath)){
-
-            if(!is_dir($fileDir)){
-                mkdir($fileDir, 0755);
-            }
-            copy($path, $fileShallExistPath);
-
-
-
-        }
-
-        $fileShallExistPath = str_ireplace($_SERVER['DOCUMENT_ROOT'], '', $fileShallExistPath);
-
-        return $fileShallExistPath;
+        $controller->run($theme, $page, $siteName);
 
     }
 
 
 
 
+
+    /**
+     * @param \Exception $error information
+     */
     public static function noteError($error)
     {
 
@@ -348,7 +501,7 @@ class App {
 
 
 
-    protected static function showError($error)
+    protected static function showError($error = [])
     {
 
         echo 'Error occurred in ' .$error['file'] . ' on line ' . $error['line'] . '<br>';
@@ -368,28 +521,25 @@ class App {
 
     public static function showErrors()
     {
-        if(self::$errors !== null && self::getConfig('debugMode')) {
-            if(isset(self::$plugins['bootstrap'])):?>
-
+        if(self::$errors !== null && self::getConfig('debugMode')):?>
                 <div class="panel panel-danger">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><?=self::_t('error')?></h3>
+                        <h3 class="panel-title"><?=self::t('error')?></h3>
                     </div>
                     <div class="panel-body">
                         <?array_walk(self::$errors, 'self::showError');?>
                     </div>
                 </div>
-
-            <? else: ?>
-                ahaha
-            <?endif;
-        }
+        <? endif;
 
     }
 
 
-
-
+    /**
+     * @param string $text translating text
+     * @param string $lang language. en, ru
+     * @return string
+     */
     public static function t($text = '', $lang = '')
     {
         if(empty($lang)){
@@ -408,6 +558,69 @@ class App {
         return Html::encode($text);
     }
 
+
+    /**
+     * @param string $fileName
+     * @param string $cachingData
+     * @param null $dir folder in cache dir if needed
+     * @return bool|string returns false if error occurred or cache file absolute path if success.
+     */
+    public static function saveCache($fileName = '', $cachingData = '', $dir = null)
+    {
+
+        $dir = $dir!=null ? str_replace('..', '', $dir) : null;
+        $dir = $dir != null ? self::$cacheDir . '/content/' . $dir . '' : self::$cacheDir . '/content';
+
+        $destination = $dir . '/' . $fileName . '.so';
+
+        if (!is_dir($dir)){
+            mkdir($dir, 0775, true);
+        }
+
+        if (file_put_contents($destination, $cachingData)){
+            return $destination;
+        }
+
+        return false;
+
+    }
+
+
+
+
+    private static function cacheExpired($path = '')
+    {
+
+        $cacheSettings = self::getConfig('caching');
+
+
+        if(filemtime($path) > time() - $cacheSettings['cacheTime']){
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /**
+     * @param string $fileName
+     * @param null $dir if needed cache from specified folder
+     * @return bool|string returns cacheFile if succeed or false if error occurred.
+     */
+    public static function getCache($fileName = '', $dir = null)
+    {
+
+        $dir = $dir!=null ? str_replace('..', '', $dir): null;
+        $dir = $dir != null ? self::$cacheDir . '/content/' . $dir . '' : self::$cacheDir . '/content';
+
+        $cacheFile = $dir . '/' . $fileName . '.so';
+
+        if(file_exists($cacheFile) && !self::cacheExpired($cacheFile)){
+            return file_get_contents($cacheFile);
+        } else{
+            return false;
+        }
+    }
 
 
 }

@@ -14,6 +14,8 @@ class Connection {
 
     protected $connection = null;
 
+    protected $query = null;
+
 
 
     public function connectedSuccessfully()

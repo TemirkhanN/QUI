@@ -6,7 +6,7 @@
  * Time: 1:34
  */
 
-namespace app\plugins\Localization;
+namespace app\plugins\localization;
 
 
 use app\core\App;
@@ -77,6 +77,3 @@ class Localization implements Plugin{
     }
 
 }
-
-
-Localization::init();
