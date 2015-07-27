@@ -1,5 +1,8 @@
 # Quintessence framework.
 
+ My first self-written framework. Doing my best and watching my progress by improving it time by time.
+ It will be great if you report issues and give advices how can I do it better.
+ 
 
 ## Requirements
  at least PHP 5.4 and higher
@@ -33,6 +36,3 @@
   *  [Sb-admin2](https://github.com/IronSummitMedia/startbootstrap-sb-admin-2)
 
 
-
-
-As I already said It will be great if you report issues and give advices.
