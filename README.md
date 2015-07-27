@@ -1,6 +1,17 @@
 # Quintessence framework.
 
 
+## Requirements
+ at least PHP 5.4 and higher. 
+ 
+ 
+## Directory structure:
+1. backend
+2. cache
+3. config
+4. frontend
+5. views
+
 ## Installation:
 1. Clone repository.
 2. Configure database connection and import database_dump.sql from repository root
