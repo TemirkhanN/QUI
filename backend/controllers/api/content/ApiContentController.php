@@ -1,17 +1,12 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Насухов
- * Date: 24.05.2015
- * Time: 0:17
- */
 
-namespace app\controllers;
+
+namespace app\controllers\api\content;
 
 
 use app\core\App;
 use app\core\base\Controller;
-use app\core\file\worker\Cache;
+use app\core\file_worker\Cache;
 use app\models\database\Content;
 
 class ApiContentController extends Controller {
@@ -31,13 +26,12 @@ class ApiContentController extends Controller {
 
             $link = $_GET['link'];
 
-            $cache = Cache::getCache($link, 'content');
+            $cache = Cache::getKey($link, 'content');
 
             if($cache === false) {
-                $content = new Content();
-                $content = $content->getRecord(['link' => $link]);
+                $content = (new Content())->getRow(['link' => $link]);
                 $json = json_encode($content, JSON_UNESCAPED_UNICODE);
-                Cache::saveCache($link, $json, 'content');
+                Cache::setKey($link, $json, 'content');
                 $cache = $json;
             }
         }
@@ -68,7 +62,7 @@ class ApiContentController extends Controller {
             $category = $_GET['category'];
 
             $cacheName = $category . '_page' . $page . '_offset' . $offset . '_limit' . $limit;
-            $cache = Cache::getCache($cacheName, 'content');
+            $cache = Cache::getKey($cacheName, 'content');
 
             if($cache === false) {
                 $contents = App::$db->getRecords(['*'], 'content', ['cat' => $category], [],$offset, $limit);
@@ -81,7 +75,7 @@ class ApiContentController extends Controller {
 
 
                 $json = json_encode($contents, JSON_UNESCAPED_UNICODE);
-                Cache::saveCache($cacheName, $json, 'content');
+                Cache::setKey($cacheName, $json, 'content');
                 $cache = $json;
             }
         }

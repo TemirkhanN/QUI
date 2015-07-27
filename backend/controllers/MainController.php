@@ -9,7 +9,6 @@
 namespace app\controllers;
 
 
-use app\core\App;
 use app\core\base\Controller;
 
 class MainController extends Controller {
@@ -18,7 +17,7 @@ class MainController extends Controller {
     //Главная страница сайта
     public function pageIndex()
     {
-        $this->redirectToController('content/index');
+        $this->redirect('content/index');
 
     }
 

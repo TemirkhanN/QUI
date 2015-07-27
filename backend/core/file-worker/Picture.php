@@ -1,6 +1,6 @@
 <?php
 
-namespace app\core\file\worker;
+namespace app\core\file_worker;
 
 class Picture{
 	
@@ -11,7 +11,8 @@ class Picture{
 	public $imgMaxSize = array(1000, 1000); //Максимально допустимые размеры изображения
 	public $imgFile; // Массив $_FILES[inputname], хранящий необходимое нам изображение
 	
-	public static function getInstance(){
+	public static function getInstance()
+    {
 		
 		if (self::$instance===null){
 			

@@ -20,7 +20,7 @@ class ContentController extends Controller {
     public function pageIndex()
     {
 
-        $this->redirectToController('content/show-contents');
+        $this->redirect('content/show-contents');
 
     }
 
@@ -33,6 +33,12 @@ class ContentController extends Controller {
 
         $content = file_get_contents($url);
         $content = json_decode($content, TRUE);
+
+        if($content){
+            $this->setTitle($content['headline'].' | '. SITE_ADDRESS);
+            $this->setMetaDesc($content['preview']);
+            $this->setMetaKeys($content['tags']);
+        }
 
 
         $this->renderPage('content', ['content'=>$content]);
@@ -60,6 +66,11 @@ class ContentController extends Controller {
         } else{
             $total = 0;
         }
+
+        $this->setTitle('Женская красота и здоровье - Vforme.su');
+        $this->setMetaDesc('Быть красивой и здоровой-легко. Уход за кожей лица, рук и тела. Питание и диеты.');
+        $this->setMetaKeys('Красота,krasota, женщины,девушки,здоровье,видеорецепты,диета,уход за волосами, уход за телом,маски для лица,rhfcjnf');
+
 
         $this->renderPage('contents', [
             'contents'=>$contents,

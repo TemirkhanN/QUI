@@ -1,45 +1,44 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: Насухов
- * Date: 28.06.2015
- * Time: 13:44
+ * Basic rigidbody for caching system
+ * Tis for future for easy integration if memcache, redis or kind'a that will be used in project.
  */
 
-namespace app\core\file\worker;
+namespace app\core\file_worker;
 
 
 use app\core\App;
 
 
-
-
 class Cache
 {
 
-
-    public static  $cacheDir = '/cache';
+    private static $generalCacheDir = '/cache/general'; // Controllable cache folder
+    private static $systemCacheDir = '/cache/sys'; //System cache folder. For future
 
     /**
-     * @param string $fileName
+     * @param string $key
      * @param string $cachingData
-     * @param null $dir folder in cache dir if needed
-     * @return bool|string returns false if error occurred or cache file absolute path if success.
+     * @param null $group caching key group name to keep data separate.
+     * For example setKey('rating', 100, 'users');
+     * Also it shall not contain points(they will be replaced for security reasons)
+     *
+     * @return bool information about operation success
      */
-    public static function saveCache($fileName = '', $cachingData = '', $dir = null)
+    public static function setKey($key = '', $cachingData = '', $group = null)
     {
 
-        $dir = $dir!=null ? str_replace('..', '', $dir) : null;
-        $dir = $dir != null ? ROOT_DIR . self::$cacheDir . '/content/' . $dir . '' : self::$cacheDir . '/content';
+        $group = $group != null ? str_replace('.', '', $group) : null;
+        $dir = $group != null ? ROOT_DIR . self::$generalCacheDir . '/' . $group . '' : self::$generalCacheDir;
 
-        $destination = $dir . '/' . $fileName . '.so';
+        $destination = $dir . '/' . $key . '.so';
 
         if (!is_dir($dir)){
             mkdir($dir, 0775, true);
         }
 
         if (file_put_contents($destination, $cachingData)){
-            return $destination;
+            return true;
         }
 
         return false;
@@ -47,15 +46,17 @@ class Cache
     }
 
 
-
-
-    private static function cacheExpired($path = '')
+    /**
+     * @param string $filePath full path to file that shall be ckecked
+     * if its doesn't exist or last modify time greeter than cache time defined in settings(/config/main.php)
+     * @return bool
+     */
+    private static function expired($filePath = '')
     {
 
         $cacheSettings = App::getConfig('caching');
 
-
-        if(filemtime($path) > time() - $cacheSettings['cacheTime']){
+        if(!file_exists($filePath) || filemtime($filePath) < time() - $cacheSettings['cacheTime']){
             return true;
         }
 
@@ -64,23 +65,24 @@ class Cache
 
 
     /**
-     * @param string $fileName
-     * @param null $dir if needed cache from specified folder
+     * @param string $key
+     * @param null $group if needed cache from specified group
      * @return bool|string returns cacheFile if succeed or false if error occurred.
      */
-    public static function getCache($fileName = '', $dir = null)
+    public static function getKey($key = '', $group = null)
     {
 
-        $dir = $dir!=null ? str_replace('..', '', $dir): null;
-        $dir = $dir != null ? ROOT_DIR .self::$cacheDir . '/content/' . $dir . '' : self::$cacheDir . '/content';
+        $group = $group!=null ? str_replace('.', '', $group): null;
+        $group = $group != null ? ROOT_DIR . self::$generalCacheDir . '/' . $group . '' : self::$generalCacheDir;
 
-        $cacheFile = $dir . '/' . $fileName . '.so';
+        $cacheFile = $group . '/' . $key . '.so';
 
-        if(file_exists($cacheFile) && !self::cacheExpired($cacheFile)){
+        if(!self::expired($cacheFile)){
             return file_get_contents($cacheFile);
-        } else{
-            return false;
         }
+
+        return false;
+
     }
 
 }

@@ -26,13 +26,13 @@ class UserController extends Controller {
             if (isset($_POST['log_in'])) {
                 $loggedIn = $user->logIn($_POST['login'], $_POST['password']);
                 if ($loggedIn === true) {
-                    $this->redirect("/");
+                    $this->redirectToUrl("/");
                 } else {
                     $errors = $loggedIn;
                 }
             }
         } else {
-            $this->redirect("/");
+            $this->redirectToUrl("/");
         }
 
         $this->setCustomTemplate(true);
@@ -52,7 +52,7 @@ class UserController extends Controller {
     {
 
         (new User())->logOut();
-        $this->redirect('/');
+        $this->redirectToUrl('/');
     }
 
 

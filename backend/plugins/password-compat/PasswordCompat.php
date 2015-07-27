@@ -232,6 +232,7 @@ namespace {
         }
     }
 }
+
 namespace PasswordCompat\binary {
     if (!function_exists('PasswordCompat\\binary\\_strlen')) {
         /**

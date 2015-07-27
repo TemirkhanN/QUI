@@ -6,7 +6,7 @@
  * Time: 10:03
  */
 
-namespace app\plugins\sb\admin;
+namespace app\plugins\sb_admin;
 
 
 use app\core\App;

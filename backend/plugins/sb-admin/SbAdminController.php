@@ -11,7 +11,7 @@ namespace app\controllers;
 
 use app\core\App;
 use app\core\base\Controller;
-use app\plugins\sb\admin\SbAdmin;
+use app\plugins\sb_admin\SbAdmin;
 
 class SbAdminController extends Controller
 {

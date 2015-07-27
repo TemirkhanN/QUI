@@ -1,16 +1,18 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: temirkhan
- * Date: 18.04.15
- * Time: 17:29
- */
 
 namespace app\core\db;
 
 
 use app\core\App;
 
+
+/**
+ * Class PdoWrapper
+ * @package app\core\db
+ *
+ * Mother of all database actions. Tis some kind of cover of getting, checking, deleting and updating queries
+ * Comments are in russian. It will be changed soon
+ */
 class PdoWrapper extends Connection{
 
 
@@ -433,13 +435,6 @@ class PdoWrapper extends Connection{
 
 
     }
-
-
-
-
-
-
-
 
 
 

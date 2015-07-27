@@ -1,20 +1,43 @@
 <?php
 
-namespace app\core\file\worker;
+namespace app\core\file_worker;
+
+use app\core\App;
 
 
+/**
+ * Class File
+ * @package app\core\file_worker
+ *
+ *
+ * Any file manipulation such as delete, copy, require flow here
+ */
 class File {
 
 
-    public static function deleteFile($file){
-        if (file_exists($file)){
-            unlink($file);
+    /**
+     * @param string $filePath path to file that shall be required
+     * @return bool|mixed returns false if somehow troubled to require file
+     */
+    public static function requireFile($filePath = '')
+    {
+        try {
+            if (file_exists($filePath)) {
+
+                return require_once $filePath;
+
+            } else {
+
+                throw new  \Exception('File ' . basename($filePath) . ' doesn\'t exist');
+
+            }
+        } catch (\Exception $error) {
+
+            App::noteError($error);
+            return false;
+
         }
-
-        return;
     }
-
-
 
 
     /**
@@ -29,7 +52,14 @@ class File {
             if(!is_dir($destinationDir)){
                 mkdir($destinationDir, 0755, true);
             }
-            copy($from, $to);
+
+            try {
+                if(copy($from, $to) == false){
+                    throw new \Exception("Couldn't copy file from ". $from . " " . $to);
+                }
+            } catch(\Exception $e){
+                App::noteError($e);
+            }
         }
 
         $to = str_ireplace(FRONTEND_DIR, '', $to);
@@ -37,4 +67,50 @@ class File {
         return $to;
 
     }
+
+
+    /**
+     * @param string $path  absolute path to file
+     * @return bool
+     */
+    public static function deleteFile($path){
+        if (file_exists($path)){
+            return unlink($path);
+        }
+
+        return false;
+    }
+
+
+    /**
+     * @param string $path absolute path to folder
+     * @return bool
+     */
+    public static function deleteFolder($path)
+    {
+        if(is_dir($path)){
+            $files = glob($path.'/*');
+
+            if($files) {
+
+                foreach ($files as $file) {
+
+                    if(is_dir($path)){
+                        self::deleteFolder($file);
+                    } else{
+                        self::deleteFile($file);
+                    }
+
+                }
+
+            }
+
+            return rmdir($path);
+        }
+
+        return false;
+
+    }
+
+
 }

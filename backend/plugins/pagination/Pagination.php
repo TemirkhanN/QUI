@@ -1,12 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Насухов
- * Date: 23.05.2015
- * Time: 20:09
- */
 
-namespace app\core\web;
+namespace app\plugins\pagination;
 
 
 use app\core\App;
@@ -36,7 +30,7 @@ class Pagination {
         $this->totalPages = ceil($this->totalElementsCount/$this->perPage);
         $this->pattern = $pagePattern;
         $this->regExPattern = $this->patternToRegExPattern();
-        $this->currentPage = $this->parseCurrentPage();
+        $this->currentPage = $this->getCurrentPage();
     }
 
 
@@ -132,8 +126,8 @@ class Pagination {
 
 
 
-    //Detect current page number
-    private function parseCurrentPage()
+    //Detect and return current page number
+    private function getCurrentPage()
     {
         if(!empty(self::$parsedUrl['query'])) {
             preg_match('#'.$this->regExPattern.'#', self::$parsedUrl['query'], $match);

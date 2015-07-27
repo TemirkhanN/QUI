@@ -18,7 +18,7 @@ return  [
 
     'caching' => [
         'active' => true,
-        'cacheTime' => 300, //in seconds
+        'cacheTime' => 360, //in seconds
     ],
 
     'database' => [
@@ -31,6 +31,7 @@ return  [
     'plugins' => [
         'localization',
         'bootstrap',
+        'pagination',
         'password-compat', // used for function  "password_(verify|hash...)" compatibility  in PHP 5.4-5.5
         'rating',
         'translit',

@@ -1,11 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Насухов
- * Date: 12.05.2015
- * Time: 22:26
- */
-
 namespace app\models\user;
 
 
@@ -67,7 +60,7 @@ class User extends Model
                 self::initializeUserTable();
 
                 $user = new \app\models\database\User();
-                $user->getRecord(['login' => $login]);
+                $user->getRow(['login' => $login]);
 
 
                 if ($user->login === strtolower($login) && password_verify($password, $user->password)) {
@@ -75,14 +68,14 @@ class User extends Model
                     $this->saveAuthorization((array) $user);
                     return true;
                 } else {
-                    $this->logError('logIn', "User doesn't exist");
+                    $this->logError(__FUNCTION__, "User doesn't exist");
                 }
 
             } else {
                 return array_merge($this->returnErrors('validatePassword'), $this->returnErrors('validateLogin'));
             }
         } else{
-            $this->logError('logIn', "You're already authorized");
+            $this->logError(__FUNCTION__, "You're already authorized");
         }
 
 
@@ -97,7 +90,7 @@ class User extends Model
         $valid = true;
 
         if (empty($password)){
-            $this->logError('validatePassword', 'Password is empty');
+            $this->logError(__FUNCTION__, 'Password is empty');
             $valid = false;
         }
 
@@ -110,7 +103,7 @@ class User extends Model
     {
         $valid = true;
         if(empty($login)){
-            $this->logError('validateLogin', 'Login is empty');
+            $this->logError(__FUNCTION__, 'Login is empty');
         }
 
         return $valid;
@@ -180,11 +173,11 @@ class User extends Model
         $userId = intval($userId) == 0 ? $this->data['id'] : intval($userId);
 
         $user = new \app\models\database\User();
-        if($user = $user->getRecord(['id' => $userId], $user::OBJ)){
+        if($user = $user->getRow(['id' => $userId])){
             return $user;
         } else{
-            $this->logError('getProfile', "user with such identifier doesn't exist");
-            return $this->returnErrors('getProfile');
+            $this->logError(__FUNCTION__, "user with such identifier doesn't exist");
+            return $this->returnErrors(__FUNCTION__);
         }
     }
 

@@ -6,7 +6,7 @@
  * Time: 20:29
  */
 
-namespace app\plugins\simple\encrypt;
+namespace app\plugins\simple_encrypt;
 
 
 class SimpleEncrypt {

@@ -1,16 +1,19 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: temirkhan
- * Date: 16.04.15
- * Time: 20:11
- */
 
 namespace app\core;
 
+use app\core\file_worker\File;
 use app\core\web\Html;
 use app\plugins\Localization\Localization;
 
+
+/**
+ * Class App
+ * @package app\core
+ *
+ *
+ * Heart of web application. All initialization, config, dependencies, models, plugins load flow here
+ */
 class App {
 
 
@@ -20,7 +23,6 @@ class App {
     private static $config; //application configuration
     public static  $db; //database connection
     private static $debug; //debug information(time and memory spending)
-    private static $dependencies; //list of application required and included dependencies
     private static $errors; // errors occurred during application run
     public static  $templateDir; //application template(view) folder
     public static  $templateHeaders; // contains js, css and other data that shall be included in application template header
@@ -36,8 +38,7 @@ class App {
     public static function init()
     {
         if(self::$app == null){
-            App::requireFile(ROOT_DIR . '/backend/dependencies.php');
-            self::$config = App::requireFile(ROOT_DIR . '/config/main.php');
+            self::$config = File::requireFile(ROOT_DIR . '/config/main.php');
             self::$app = new self();
         }
 
@@ -56,8 +57,8 @@ class App {
         }
         self::$language = self::getConfig('language');
         self::$protocol = self::getConfig('transferProtocol') === 'https' ? 'https' : 'http';
+
         $this->loadPlugins(self::getConfig('plugins'));
-        $this->loadModels(__DIR__ .'/../models');
 
         new \app\models\user\User(); //!!! temporarily here
     }
@@ -136,7 +137,6 @@ class App {
 
                     self::$request['url'] = $urlManager->getRequestParams();
                     $this->fillRequestData();
-
                     $this->runController($route);
                 }
             }
@@ -197,7 +197,6 @@ class App {
 
             }
 
-
             return self::$config;
         }
 
@@ -206,53 +205,51 @@ class App {
 
 
     /**
-     * @param string $filePath path to file that shall be required
-     * @return bool|mixed returns false if somehow troubled to require file
+     * @param array $plugins active plugins names that shall be included and activated in application
      */
-    public static function requireFile($filePath = '')
+    private function loadPlugins($plugins = [])
     {
-        try {
-            if (file_exists($filePath)) {
-
-                return require_once $filePath;
-
-            } else {
-
-                throw new  \Exception('File ' . basename($filePath) . ' doesn\'t exist');
-
+        if (is_array($plugins)){
+            foreach($plugins as $plugin){
+                self::loadPlugin($plugin);
             }
-        } catch (\Exception $error) {
-
-            self::noteError($error);
-            return false;
-
         }
     }
 
 
+
     /**
      * requires and initializes plugin from /backend/plugins by folder name passed
+     * if plugin has not dependencies file, method will try to load file with same name from folder
+     * For example:
+     * Plugin name: password_compat
+     * has not plugin.dependencies in /backend/plugins/password-compat/
+     * so it will try to load /backend/plugins/password-compat/PasswordCompat.php
+     *
      * @param string $name for example 'bootstrap'
      */
-    protected static function loadPlugin($name = '')
+    private static function loadPlugin($name = '')
     {
         try {
             if(file_exists(__DIR__ . '/../plugins/' . $name . '/plugin-dependencies.php')) {
                 if(!isset(self::$plugins[$name])) {
 
-                    $pluginFiles = self::requireFile(__DIR__ . '/../plugins/' . $name . '/plugin-dependencies.php');
+                    $pluginFiles = File::requireFile(__DIR__ . '/../plugins/' . $name . '/plugin-dependencies.php');
+
 
                     self::$plugins[$name] = true;
                     self::loadPluginDependencies($name, $pluginFiles);
+
 
                 } else{
                     throw new \Exception('Duplicate plugin include for  "'. $name .'"');
                 }
 
 
-            } elseif(file_exists(__DIR__ . '/../plugins/' . $name . '/'.self::toCamelCase($name).'.php')){
-                self::requireFile(__DIR__ . '/../plugins/' . $name . '/'.self::toCamelCase($name).'.php');
+            } elseif(file_exists(__DIR__ . '/../plugins/' . $name . '/' . self::toCamelCase($name).'.php')){
+                File::requireFile(__DIR__ . '/../plugins/' . $name . '/' . self::toCamelCase($name).'.php');
             }
+
             self::initializePlugin($name);
 
         } catch(\Exception $e){
@@ -273,7 +270,7 @@ class App {
                 switch($type){
                     case 'php':
                         foreach ($files as $fileName) {
-                            self::requireFile(__DIR__ . '/../plugins/' . $name . '/' . $fileName . '.php');
+                            File::requireFile(__DIR__ . '/../plugins/' . $name . '/' . $fileName . '.php');
                         }
                         break;
 
@@ -315,19 +312,10 @@ class App {
 
 
 
-
-    protected function loadPlugins($plugins = [])
+    private static function initializePlugin($pluginName = '')
     {
-        if (is_array($plugins)){
-            array_walk($plugins, 'self::loadPlugin');
-        }
-    }
+        $pluginClass = str_replace('-', '_', 'app\plugins\\' . $pluginName .'\\'. self::toCamelCase($pluginName));
 
-
-
-    protected static function initializePlugin($pluginName = '')
-    {
-        $pluginClass = str_replace('-', '\\', 'app\plugins\\' . $pluginName .'\\'. self::toCamelCase($pluginName));
         if(class_exists($pluginClass) && method_exists($pluginClass, 'init')){
             $pluginClass::init();
         }
@@ -342,68 +330,6 @@ class App {
     }
 
 
-    /**
-     * @param string $modelsDir path to models directory.
-     * requires models classes recursively from directory. Default /backend/models
-     */
-    protected function loadModels($modelsDir = '')
-    {
-        $modelsDirs  = glob($modelsDir . '/*', GLOB_ONLYDIR);
-
-        if (!empty($modelsDirs)){
-            array_walk($modelsDirs, [$this, 'loadModels']);
-        }
-
-        $models = glob($modelsDir .'/*.php');
-        array_walk($models, 'self::requireFile');
-    }
-
-
-
-    public static function getDependencies()
-    {
-        return self::$dependencies;
-    }
-
-
-    /**
-     * NOTE! Dependencies lay only under core folder. Everything out of this is not dependency.
-     * @param string $dependency name of dependency . base/Plugin
-     * @param string $type dependency classification. runtime, classes and etc. It is for only tracking for now.
-     * @param string $path path to dependency file. starts from core folder. For example file under /backend/core/web/SomeClass.php
-     * shall be set as web/SomeClass
-     */
-    protected static function loadDependency($dependency, $type, $path)
-    {
-
-        if (self::requireFile(__DIR__ .'/' .$path . '.php') !== false){
-
-            $type == null ? self::$dependencies[$dependency] = $path : self::$dependencies[$type][$dependency] = $path;
-        }
-
-    }
-
-
-    /**
-     * @param array $dependencies requires all set dependencies from /backend/dependencies.php
-     * @param null $type this is for only tracking what is required in total. Contains associative key for dependencies group.
-     */
-    public static function loadDependencies($dependencies, $type = null)
-    {
-
-        if (is_array($dependencies)){
-
-            foreach ($dependencies as $dependency=>$path){
-
-                is_array($path) ? self::loadDependencies($path, $dependency) : self::loadDependency($dependency, $type, $path);
-
-            }
-        }
-
-
-
-    }
-
 
     /**
      * @param string $action contains controllerName || ControllerName/actionName arg.  'ControllerName/actionName'
@@ -411,6 +337,7 @@ class App {
      */
     public function runController($action = '')
     {
+
         if(strpos($action, '/')) {
             list($controller, $page) = explode('/', $action);
         } else{
@@ -419,29 +346,17 @@ class App {
 
         while($controllerInSubDir = strpos($controller,'-')){
             $leastString = mb_strcut($controller, $controllerInSubDir+1); //What passed after matching - . At least shall stay only real controller name
-            $controller = mb_strcut($controller, 0, $controllerInSubDir).'/'.$leastString;
+            $controller = mb_strcut($controller, 0, $controllerInSubDir) . '\\' . $leastString;
         }
 
-        if(isset($leastString)){
-            $controller = mb_strcut($controller, 0, mb_strlen($controller) - mb_strlen($leastString));
-            $controller .= ucfirst($leastString);
-            $controllerName = ucfirst($leastString);
+        if(!empty($leastString)){
+            $controller = str_replace($leastString, ucfirst($leastString), $controller);
         } else{
             $controller = ucfirst($controller);
-            $controllerName = $controller;
         }
 
 
-        $cName = '\\app\\controllers\\' . $controllerName . 'Controller';
-
-
-        /*
-            Checks if class already required.
-            for now this exists only cause of plugins that require their controllers through plugin-dependencies
-        */
-        if(!class_exists($cName)) {
-            self::requireFile(__DIR__ . '/../controllers/' . $controller . 'Controller.php');
-        }
+        $cName = '\\app\\controllers\\' . $controller . 'Controller';
 
 
 
@@ -469,11 +384,7 @@ class App {
             $siteName = $siteName->parameter;
         }
 
-
-
         $controller = new $cName(self::$templateDir); // Initializing controller's template directory
-
-
 
         $controller->run($theme, $page, $siteName);
 

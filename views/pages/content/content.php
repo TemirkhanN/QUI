@@ -1,10 +1,4 @@
-<?php
-
-if( $content != null ):
-    $this->setTitle($content['headline'].' | Vforme.su');
-    $this->setMetaDesc($content['preview']);
-    $this->setMetaKeys($content['tags']);
-?>
+<?php if( $content != null ): ?>
     <div class="content">
             <h1 class="centered">
                 <?=$content['headline']?>

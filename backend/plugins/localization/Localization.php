@@ -1,16 +1,11 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Насухов
- * Date: 16.05.2015
- * Time: 1:34
- */
 
 namespace app\plugins\localization;
 
 
 use app\core\App;
 use app\core\base\Plugin;
+use app\core\file_worker\File;
 
 class Localization implements Plugin{
 
@@ -33,7 +28,7 @@ class Localization implements Plugin{
         try {
             if (is_dir(__DIR__ . '/lang/' . $langId)) {
                 if (file_exists(__DIR__ . '/lang/' . $langId . '/dic.php')) {
-                    self::$dictionary[$langId] = App::requireFile(__DIR__ . '/lang/' . $langId . '/dic.php');
+                    self::$dictionary[$langId] = File::requireFile(__DIR__ . '/lang/' . $langId . '/dic.php');
                 } else{
                     throw new \Exception("Language dictionary-file doesn't exist in directory");
                 }
@@ -64,7 +59,7 @@ class Localization implements Plugin{
 
     public static function getLangList()
     {
-        self::$langs = App::requireFile(__DIR__ . '/lang/lang-list.php');
+        self::$langs = File::requireFile(__DIR__ . '/lang/lang-list.php');
     }
 
 

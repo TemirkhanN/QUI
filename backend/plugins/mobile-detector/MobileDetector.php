@@ -6,7 +6,7 @@
  * Time: 20:21
  */
 
-namespace app\plugins\mobile\detector;
+namespace app\plugins\mobile_detector;
 
 
 class MobileDetector {
@@ -42,7 +42,7 @@ class MobileDetector {
         foreach( $mobiles as $mobile ){
 
             if( strpos($browser, $mobile) !== false ){
-                header('Location: http://m.'.self::secureData($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']));
+                header('Location: http://m.'. self::secureData($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']));
                 break;
             }
         }

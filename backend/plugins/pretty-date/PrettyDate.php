@@ -6,7 +6,7 @@
  * Time: 20:13
  */
 
-namespace app\plugins\pretty\date;
+namespace app\plugins\pretty_date;
 
 
 

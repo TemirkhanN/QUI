@@ -1,11 +1,6 @@
 <?php
 use app\core\web\Html;
-use app\plugins\pretty\date\PrettyDate;
-
-
-$this->setTitle('Женская красота и здоровье - Vforme.su');
-$this->setMetaDesc('Быть красивой и здоровой-легко. Уход за кожей лица, рук и тела. Питание и диеты.');
-$this->setMetaKeys('Красота,krasota, женщины,девушки,здоровье,видеорецепты,диета,уход за волосами, уход за телом,маски для лица,rhfcjnf');
+use app\plugins\pretty_date\PrettyDate;
 
 ?>
 
@@ -49,12 +44,9 @@ $this->setMetaKeys('Красота,krasota, женщины,девушки,здо
 
 
         </div><!--content_preview-->
-    <? if($count%2 === 0):?>
-        </div>
-    <? endif;?>
-
-
-
+        <? if($count%2 === 0):?>
+            </div>
+        <? endif;?>
 
 
     <? endforeach; ?>
@@ -62,7 +54,7 @@ $this->setMetaKeys('Красота,krasota, женщины,девушки,здо
 
     <div class="both-clear"></div>
 
-    <?=(new app\core\web\Pagination($elementsOnPage, $totalElements))->pagination()?>
+    <?=(new \app\plugins\pagination\Pagination($elementsOnPage, $totalElements))->pagination()?>
 
 
 

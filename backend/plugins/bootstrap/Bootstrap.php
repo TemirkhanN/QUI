@@ -77,10 +77,10 @@ class Bootstrap
                 } else{
                     $ulContent .= self::currentUrlIsActiveLink($link['href'])!='' ? '<li class="active '.$link['class'].'">' : '<li class="'.$link['class'].'">';
                 }
-                $ulContent .= '<a '.self::generateAttributes($link).'>'.$link['title'].'</a>';
+                $ulContent .= '<a '. self::generateAttributes($link).'>'.$link['title'].'</a>';
                 $ulContent .= '</li>';
             } else{
-                $ulContent .= '<li class="dropdown'.self::currentUrlIsActiveLink($link['href']).'">';
+                $ulContent .= '<li class="dropdown'. self::currentUrlIsActiveLink($link['href']).'">';
                 $ulContent .= '<a href="'.$link['href'].'" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">'.$link['title'].'<span class="caret"></span></a>';
                 $ulContent .= self::generateNavBar($link['child'], null, true);
             }
@@ -135,12 +135,12 @@ class Bootstrap
 
 
         $carousel = '
-            <div '.self::generateAttributes($attributes).' class="carousel '.$attributes['class'].' carousel-fit" data-ride="carousel" data-interval="'.$attributes['interval'].'">
+            <div '. self::generateAttributes($attributes).' class="carousel '.$attributes['class'].' carousel-fit" data-ride="carousel" data-interval="'.$attributes['interval'].'">
                 <ol class="carousel-indicators">
-                    '.self::generateCarouselSwitchers($items, $attributes['id']).'
+                    '. self::generateCarouselSwitchers($items, $attributes['id']).'
                 </ol>
                 <div class="carousel-inner" role="listbox">
-                    '.self::generateCarouselSlides($items).'
+                    '. self::generateCarouselSlides($items).'
                 </div>
                 <a class="left carousel-control" href="#' . $attributes['id'] . '" role="button" data-slide="prev">
                     <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
@@ -191,7 +191,7 @@ class Bootstrap
             }
 
             $slides .= '
-                    <div'.self::generateAttributes($item).'>
+                    <div'. self::generateAttributes($item).'>
                         <a href="'.$item['href'].'">
                             <img src="'.$item['image'].'" title="'.$item['name'].'" alt="'.$item['name'].'">
                         </a>
@@ -213,8 +213,8 @@ class Bootstrap
     public static function table($schema = [], $items = [], $attributes = [])
     {
         $attributes['class'] = !empty($attributes['class']) ? 'table ' . $attributes['class'] : 'table';
-        $table = '<table '.self::generateAttributes($attributes).'>';
-        $table .= '<thead>'.self::generateTableRow($schema, 'th').'</thead>';
+        $table = '<table '. self::generateAttributes($attributes).'>';
+        $table .= '<thead>'. self::generateTableRow($schema, 'th').'</thead>';
 
         $table .= '<tbody>';
         foreach($items as $item){

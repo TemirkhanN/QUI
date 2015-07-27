@@ -1,15 +1,15 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: temirkhan
- * Date: 17.04.15
- * Time: 11:26
- */
 
 namespace app\core\db;
 
 
-
+/**
+ * Class Connection
+ * @package app\core\db
+ *
+ * Basic database connection parent class.
+ * For future. Maybe it shall be abstract. Don't know
+ */
 class Connection {
 
     protected $connection = null;
