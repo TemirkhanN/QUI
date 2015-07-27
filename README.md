@@ -16,10 +16,10 @@
   
   
 ## Used-in third-party:
-  *  Bootstrap 3.3.5  https://github.com/twbs/bootstrap
-  *  Bootpag          https://github.com/botmonster/jquery-bootpag
-  *  Password_compat  https://github.com/ircmaxell/password_compat
-  *  Sb-admin2        https://github.com/IronSummitMedia/startbootstrap-sb-admin-2
+  *  [Bootstrap 3.3.5](/twbs/bootstrap)
+  *  [Bootpag](/botmonster/jquery-bootpag)
+  *  [Password_compat](/ircmaxell/password_compat)
+  *  [Sb-admin2](/IronSummitMedia/startbootstrap-sb-admin-2)
 
 
 
