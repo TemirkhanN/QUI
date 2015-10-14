@@ -1,60 +1,54 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: temirkhan
- * Date: 17.04.15
- * Time: 7:27
- */
 
-namespace app\core\web;
+namespace core\web;
 
 
-use app\core\App;
+use core\App;
 
 class UrlManager {
 
 
     protected $request = ['path'=>'', 'full'=>'']; //current request_uri info
 
-    protected static $rules = []; // matching rules. By default from /config/main.php
+    protected static $routes = []; // matching routes. By default from /config/main.php
 
     protected $actionRoute = null; //detecting action that will be passed to App and called from controller
 
-    protected $params = []; //params passed through rules
+    protected $params = []; //params passed through routes
 
 
 
 
-    public function __construct($request, $rules)
+    public function __construct($request, $routes)
     {
-        if($request && $rules && is_array($rules)) {
+        if($request && $routes && is_array($routes)) {
             $this->request['full'] = $request;
             $this->request['path'] = parse_url($request, PHP_URL_PATH);
 
 
 
 
-                foreach ($rules as $key => $rule) {
+                foreach ($routes as $key => $route) {
                     try {
-                        if (self::validateRule($rule) == false) {
-                            unset($rules[$key]);
-                            throw new \Exception('Bad route rule passed to UrlManager');
+                        if (self::validRoute($route) == false) {
+                            unset($routes[$key]);
+                            throw new \Exception('Bad route route passed to UrlManager');
                         }
                     } catch(\Exception $error) {
                         App::noteError($error);
                     }
                 }
-            self::$rules = array_merge(self::$rules, $rules);
+            self::$routes = array_merge(self::$routes, $routes);
         }
 
     }
 
 
 
-    public static function addRule($rule)
+    public static function addRoute($route)
     {
-        if(self::validateRule($rule)) {
-            self::$rules[] = $rule;
+        if(self::validRoute($route)) {
+            self::$routes[] = $route;
         }
     }
 
@@ -62,13 +56,10 @@ class UrlManager {
 
 
 
-    private static function validateRule($rule = [])
+    private static function validRoute($route = [])
     {
-        if(!is_array($rule) || empty($rule['route']) || empty($rule['action'])){
-            return false;
-        }
 
-        return true;
+        return !(!is_array($route) || empty($route['route']) || empty($route['action']));
     }
 
 
@@ -79,15 +70,15 @@ class UrlManager {
     public function parseRequest()
     {
         try {
-            if (!empty(self::$rules) && !empty($this->request)) {
+            if (!empty(self::$routes) && !empty($this->request)) {
 
-                foreach (self::$rules as $key => $rule) {
-                    $request = isset($rule['full']) && $rule['full'] == true ? $this->request['full'] : $this->request['path'];
-                    if (is_numeric($key) && preg_match('~'.$rule['route'].'~', $request, $match)) {
-                        $this->detectActionRoute($rule, $match);
+                foreach (self::$routes as $key => $route) {
+                    $request = isset($route['full']) && $route['full'] == true ? $this->request['full'] : $this->request['path'];
+                    if (is_numeric($key) && preg_match('~'.$route['route'].'~', $request, $match)) {
+                        $this->detectActionRoute($route, $match);
 
-                        if (!empty($rule['params'])) {
-                            $this->parseParams($rule['params'], $match);
+                        if (!empty($route['params'])) {
+                            $this->parseParams($route['params'], $match);
                         }
                         break;
                     }
@@ -95,7 +86,7 @@ class UrlManager {
                 }
 
                 if ($this->actionRoute === null) {
-                    $this->actionRoute = !empty(self::$rules['error_404']['action']) ? self::$rules['error_404']['action'] : 'main/index';
+                    $this->actionRoute = !empty(self::$routes['error_404']['action']) ? self::$routes['error_404']['action'] : 'main/index';
                 }
 
                 return true;
@@ -123,22 +114,21 @@ class UrlManager {
             }
 
         }
-
     }
 
 
 
-    private function detectActionRoute($rule = [], $match = [])
+    private function detectActionRoute($route = [], $match = [])
     {
-        if(count($match)>1 && empty($rule['params'])){
-            preg_match('/{(\d+)}$/', $rule['action'], $action);
+        if(count($match)>1 && empty($route['params'])){
+            preg_match('/{(\d+)}$/', $route['action'], $action);
             array_shift($action);
             $action = $action[0];
 
-           $rule['action'] = str_replace('{' . $action . '}', $match[$action+1], $rule['action']);
+           $route['action'] = str_replace('{' . $action . '}', $match[$action+1], $route['action']);
         }
 
-        $this->actionRoute = $rule['action'];
+        $this->actionRoute = $route['action'];
     }
 
 

@@ -1,14 +1,11 @@
 <?php
 
-namespace app\core\db;
-
-
-use app\core\App;
+namespace core\db;
 
 
 /**
  * Class ActiveRecord
- * @package app\core\db
+ * @package \core\db
  *
  * This class is my view on active record. I'm not really sure if it is AR at all
  *
@@ -25,7 +22,7 @@ use app\core\App;
  *
  *  namespace app\models\database;
  *
- *  use app\core\db\ActiveRecord;
+ *  use core\db\ActiveRecord;
  *
  *  class Favourites extends ActiveRecord
  *  {
@@ -53,89 +50,147 @@ use app\core\App;
  * $someFavourite->save(); //Will update existing record with id 5 to new declared values
  *
  */
-class ActiveRecord{
+class ActiveRecord implements ActiveRecordInterface
+{
 
     const OBJ = 'object';
     const ARR = 'array';
 
-    public $id; // This variable always declared. Contains primary key of record
-    private $_information = []; // Class information such as namespace, table name, table schema
+
+    /**
+     * @var DBMSOperator|bool
+     */
+    private $_db;
+
+    // This variable always declared. Contains primary key of record
+    public $id;
+
+    // Name of table that record extends to declare structure and save/delete/update & etc operations
+    private $_tableName;
 
 
     /**
-     * @param int $id primary key of active record.
+     * Detects class name from which context method has been called
+     * and passes its name as table to new instance of active record
+     *
+     * @return ActiveRecord
+     */
+    private static function init()
+    {
+        $tableName = get_called_class();
+
+        $activeRecord = new self($tableName);
+
+        return $activeRecord;
+    }
+
+
+    /**
+     * Creates new active record
+     * @param string | null $realTableName forcely sets ActiveRecords table to choosen
      * It tries to get element from table with such identifier
      */
-    public function __construct($id = 0)
-    {
-        $id = (int) $id;
-
-        $reflection = new \ReflectionClass($this);
-        $this->_information['namespace'] = $reflection->getParentClass()->name;
-        $this->_information['tableName'] = lcfirst($reflection->getShortName());
-        $this->_information['schema'] = App::$db->describeTable($this->_information['tableName']);
-
-
-        if($id > 0){
-            $this->getRow(['id'=>$id]);
-        }
-    }
-
-
-    /**
-     * @param array|bool $where conditions that passed as ['column'=>'columnValue', ...]
-     * @return array  AR fields and data as assoc array if it exists
-     */
-    public function getRow($where = false, $type = self::OBJ)
-    {
-        $data = App::$db->getRecord(['*'], $this->_information['tableName'], $where);
-
-        $this->declareFields($data);
-
-        return $this->getFieldsVars($type);
-    }
-
-
-    /**
-     * Declares and fills fields of AR by passing columns from table schema to class properties
-     * Also this function declares properties value if its type matches
-     *
-     * If AR contains some existing row it will have defined identifier. Otherwise id will be unset because it shall not
-     * be set manually
-     * @param null|array $data AR's columns values
-     */
-    protected function declareFields($data = null)
+    public function __construct($realTableName = null)
     {
 
-        if(empty($this->_information['schema'])) {
+        try {
+            $this->_db = App::$app->db();
+
+            if (!$this->_db instanceof DBMSOperator) {
+                throw new \ErrorException('Connection to database is not set or not instance of "Connection"');
+            } else {
+                $this->_tableName = $realTableName ? $realTableName : lcfirst((new \ReflectionClass($this))->getShortName());
+            }
+
+        } catch (\ErrorException $e) {
+            App::noteError($e);
             return;
         }
+    }
 
 
-        foreach($this->_information['schema'] as $field) {
+    /**
+     * Gets one record from table satisfying passed condition
+     *
+     * !!!NOTE: method returns ONLY array or false. Mixed is added to hide
+     * "property not found in class" warnings in IDE
+     *
+     * @param string $where conditions that passed as ['column'=>'columnValue', ...]
+     * @return array | bool | mixed AR fields and data as assoc array if it exists
+     */
+    public static function findOne($where)
+    {
+        $activeRecord = self::init();
 
-            if ($data && isset($data[$field['Field']])) {
-                $this->$field['Field'] = $data[$field['Field']];
-            } else {
-                switch ($field['Key']) {
-                    case 'PRI':
-                        unset($this->$field['Field']); //While saving AR it shall not try save primary key
-                        break;
-                    default:
-                        $this->$field['Field'] = $field['Default'];
-                        break;
-                }
+        $data = $activeRecord->_db
+            ->get()
+            ->from($activeRecord->_tableName)
+            ->where($where)
+            ->limit(1)
+            ->launch();
 
-                if ($field['Key'] != 'PRI' && $field['Null'] == 'NO' && empty($this->$field['Field'])) {
-                    $this->$field['Field'] = '';
-                }
-
-                // if current dateTime value is empty(maybe tis new record)
-                if ($field['Type'] == 'datetime' && empty($this->field)) {
-                    $this->$field['Field'] = date("Y-m-d G:i:s");
-                }
-            }
+        if (!$data) {
+            return false;
         }
+
+        $activeRecord->declareFields($data[0]);
+
+        return $activeRecord;
+    }
+
+
+    /**
+     * Returns all elements from AR table satisfying condition
+     *
+     * @param string $where condition to get items from database
+     * @return false | array items found by condition passed
+     */
+    public static function findAll($where)
+    {
+
+        $activeRecord = self::init();
+
+        $data = $activeRecord->_db
+            ->get()
+            ->from($activeRecord->_tableName)
+            ->where($where)
+            ->launch();
+
+        return $data ? $data : false;
+    }
+
+
+    /**
+     * @param string $where condition
+     * @return mixed
+     */
+    public static function deleteOne($where)
+    {
+
+        $activeRecord = self::init();
+
+        return $activeRecord->_db
+            ->delete()
+            ->from($activeRecord->_tableName)
+            ->where($where)
+            ->limit(1)
+            ->launch();
+    }
+
+
+    /**
+     * @param string $where condition
+     * @return mixed
+     */
+    public static function deleteAll($where)
+    {
+        $activeRecord = self::init();
+
+        return $activeRecord->_db
+            ->delete()
+            ->from($activeRecord->_tableName)
+            ->where($where)
+            ->launch();
     }
 
 
@@ -143,20 +198,25 @@ class ActiveRecord{
      * Tries to save containing data to database
      * It is necessary for record to have id key as long as it is mostly used as primary key
      * If record has id, method will update row otherwise new row will be inserted
-     * @return bool if AR data save is successful
+     * @return bool | int if AR data save is successful / item id if new record created
      */
     public function save()
     {
-        $data = $this->getFieldsVars();
+        $activeRecord = $this->getPublicProperties();
 
-
-        if($data['id'] > 0){
-            if (App::$db->updateRecord($data,  $this->_information['tableName'], ['id'=>$data['id']])){
+        if ($activeRecord['id']) {
+            if (
+            $this->_db
+                ->update($activeRecord)
+                ->to($this->_tableName)
+                ->where(['id' => $activeRecord['id']])
+                ->launch()
+            ) {
                 return true;
             }
-        } else{
-            if (App::$db->addRecord($data, $this->_information['tableName'])){
-                return true;
+        } else {
+            if ($this->_db->add($activeRecord)->to($this->_tableName)->launch()) {
+                return (int)$this->_db->lastInsertId();
             }
         }
 
@@ -165,21 +225,29 @@ class ActiveRecord{
 
 
     /**
-     * Returns records variables that are declared as active record class's properties
-     * Method checks if first letter of property name is _ that is kept for system information(non-active records columns)
-     *
-     * @return array of AR's fields
+     * @return array $properties
      */
-    protected function getFieldsVars($type)
+    private function getPublicProperties()
     {
-        $fields = [];
-        foreach($this as $name=>$value){
-            if($name[0] !== '_') {
-                $fields[$name] = $value;
-            }
+        $publicProperties = (new \ReflectionObject($this))->getProperties(\ReflectionProperty::IS_PUBLIC);
+
+        $properties = [];
+        foreach ($publicProperties as $property) {
+            $properties[$property->name] = $this->{$property->name};
         }
 
-        return $type === self::OBJ ? (object) $fields : $fields;
+        return $properties;
+    }
+
+
+    /**
+     * @param array $fields AR's columns and their values values
+     */
+    protected function declareFields($fields)
+    {
+        foreach ($fields as $field => $value) {
+            $this->{$field} = $value;
+        }
     }
 
 }

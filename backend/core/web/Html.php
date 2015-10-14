@@ -6,7 +6,7 @@
  * Time: 23:12
  */
 
-namespace app\core\web;
+namespace core\web;
 
 
 class Html {

@@ -1,11 +1,11 @@
 <?php
 
-namespace app\core\base;
+namespace core\base;
 
 
 /**
  * Class Model
- * @package app\core\base
+ * @package core\base
  *
  * Extremely raw for now and has only methods that check, log or return errors that happened during child
  * class execution.

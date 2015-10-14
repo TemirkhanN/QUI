@@ -54,7 +54,7 @@
 
 
 <?php
-$loginForm = new \app\core\base\Form(['method'=>'POST', 'class'=>'form-signin']);
+$loginForm = new core\web\Form(['method'=>'POST', 'class'=>'form-signin']);
 ?>
 
 <?=$loginForm->begin()?>
