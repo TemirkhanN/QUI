@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: temirkhan
- * Date: 20.04.15
- * Time: 23:12
- */
 
 namespace core\web;
 

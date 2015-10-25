@@ -4,38 +4,42 @@ namespace core\web;
 
 
 use core\App;
+use core\app\AppLog;
 
 class UrlManager {
 
 
     protected $request = ['path'=>'', 'full'=>'']; //current request_uri info
 
-    protected static $routes = []; // matching routes. By default from /config/main.php
+    protected static $routes = [
+        'error_404'=>[
+            'route'=>'*',
+            'action' => 'main/error404',
+        ]
+    ]; // matching routes. By default from /config/main.php
 
     protected $actionRoute = null; //detecting action that will be passed to App and called from controller
 
     protected $params = []; //params passed through routes
 
 
-
-
+    /**
+     * @param string $request full requested url address
+     * @param array $routes
+     */
     public function __construct($request, $routes)
     {
         if($request && $routes && is_array($routes)) {
             $this->request['full'] = $request;
             $this->request['path'] = parse_url($request, PHP_URL_PATH);
-
-
-
-
                 foreach ($routes as $key => $route) {
                     try {
                         if (self::validRoute($route) == false) {
                             unset($routes[$key]);
-                            throw new \Exception('Bad route route passed to UrlManager');
+                            throw new \Exception('Bad route ' . print_r($route, true) . ' passed to UrlManager');
                         }
                     } catch(\Exception $error) {
-                        App::noteError($error);
+                        AppLog::noteError($error);
                     }
                 }
             self::$routes = array_merge(self::$routes, $routes);
@@ -95,7 +99,7 @@ class UrlManager {
                 throw new \Exception('Invalid parameters passed to '.get_class($this));
             }
         } catch(\Exception $error){
-            App::noteError($error);
+            AppLog::noteError($error);
             return false;
         }
 
@@ -121,11 +125,17 @@ class UrlManager {
     private function detectActionRoute($route = [], $match = [])
     {
         if(count($match)>1 && empty($route['params'])){
-            preg_match('/{(\d+)}$/', $route['action'], $action);
-            array_shift($action);
-            $action = $action[0];
-
-           $route['action'] = str_replace('{' . $action . '}', $match[$action+1], $route['action']);
+            try {
+                preg_match('/{(\d+)}$/', $route['action'], $action);
+                if (isset($action[1])) {
+                    $action = $action[1];
+                    $route['action'] = str_replace('{' . $action . '}', $match[$action], $route['action']);
+                } else{
+                    throw new \Exception('You have passed wrong param in action pattern. Check doc near "' . $route['action'].'"');
+                }
+            } catch(\Exception $e){
+                AppLog::noteError($e);
+            }
         }
 
         $this->actionRoute = $route['action'];

@@ -5,15 +5,13 @@ use core\app\AppLog;
 use core\base\Controller;
 use core\db\Connection;
 use core\helper\FileSystem;
-use core\web\Html;
 use core\web\UrlManager;
-use plugins\Localization\Localization;
 
 
 /**
  * Class App
  *
- * Heart of web application. All initialization, config, dependencies, models, plugins load flow here
+ * Heart of web application.
  */
 class App
 {
@@ -32,9 +30,8 @@ class App
     /**
      * @var \core\db\DBMSOperator
      */
-    private static $db; //database connection
+    private static $db; //database connections
     public static $templateDir; //application template(view) folder
-    public static $templateHeaders; // contains js, css and other data that shall be included in application template header
     public static $language = self::DEFAULT_LANG;
     private static $request = [
         'get'=>[], // sanitized $_GET
@@ -42,8 +39,6 @@ class App
         'cookie' => [], // sanitized $_COOKIE
         'routedParams' => [] // route params ruled in config and parsed by UrlManager
     ];
-
-    public static $plugins; //list of loaded plugins
 
 
     /**
@@ -216,8 +211,8 @@ class App
 
 
     /**
-     * Executes application work.
-     * Sanitizes and fills superglobals(get, post, cookie) and route based params.
+     * Executes application.
+     * Sanitizes and import superglobals(get, post, cookie) and route based params.
      * Initializes urlManager and Controller based on route config
      */
     public function run()
@@ -235,29 +230,4 @@ class App
 
         AppLog::showErrors();
     }
-
-
-    /**
-     * @param string $text translating text
-     * @param string $lang language. en, ru
-     * @return string
-     */
-    public static function t($text = '', $lang = '')
-    {
-        if (empty($lang)) {
-            $lang = self::$language;
-        }
-
-        $words = explode(' ', $text);
-
-        if (isset(self::$plugins['localization'])) {
-            $text = '';
-            foreach ($words as $word) {
-                $text .= ' ' . Localization::translate($word, $lang);
-            }
-        }
-
-        return Html::encode($text);
-    }
-
 }

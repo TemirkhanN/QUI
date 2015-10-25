@@ -19,7 +19,7 @@ class Controller
     /**
      * @var View
      */
-    private $view;
+    protected $view;
 
     private $pageMethodPrefix = 'page'; // prefix for all view methods in controller
 
@@ -27,6 +27,7 @@ class Controller
 
     public function __construct()
     {
+        $this->view = new View();
     }
 
 
@@ -69,40 +70,56 @@ class Controller
      */
     private function run($page)
     {
-        $this->view = new View();
         $this->view->setPage($page);
 
-        try {
-            if (method_exists($this, $this->pageMethodPrefix . $page)) {
-                $this->{$this->pageMethodPrefix . $page}();
-            } else{
-                throw new \Exception('Method '.$page.' does not exist in controller ' . (new \ReflectionClass($this))->getName());
-            }
-        } catch(\Exception $error){
-            AppLog::noteError($error);
+        if (method_exists($this, $this->pageMethodPrefix . $page)) {
+            $this->{$this->pageMethodPrefix . $page}();
+        } else{
+            $this->redirect('main/error404');
         }
-
     }
 
 
     /**
-     * @param string $page rendering view-page name
+     * Renders requested page.
+     *
+     * @param string $page rendering view-page name from "views" folder
+     * NOTE: if page doesn't contain directory seperator, current classname will be prefixed.
      * @param array $variables extracting variables that will be locally visible in rendering page-view
-     * @param string $template name of template that shall be rendered
+     * @param string|null $template name of template that shall be rendered
      * @param string $type extension of "rendering" file
      */
-    protected function renderPage($page, $variables = [], $template = 'default', $type = 'php')
+    protected function renderPage($page, $variables = [], $template = null, $type = 'php')
     {
-        $className = preg_replace('#Controller$#', '', (new \ReflectionClass($this))->getShortName());
-        /* replaces camelCase by camel-case */
-        $className = strtolower(preg_replace('#([A-Z]{1})#', '-${1}', lcfirst($className)));
-        $pageFile = ROOT_DIR . '/views/pages/' . $className . '/' . $page . '.' . $type;
+        $page = str_replace('.', '', $page); //Remove potentially dangerous relative path
+
+        //if passed view from somewhere under another controller pages or subfolders
+        //set pagefile to be exact the full string
+        //Otherwise it will be defined under className folder
+        if(strpos($page, '/') !== false){
+            $pageFile = ROOT_DIR . '/views/pages/' . $page . '.' . $type;
+        } else{
+            $className = preg_replace('#Controller$#', '', (new \ReflectionClass($this))->getShortName());
+            /* replaces camelCase by camel-case */
+            $className = strtolower(preg_replace('#([A-Z]{1})#', '-${1}', lcfirst($className)));
+            $pageFile = ROOT_DIR . '/views/pages/' . $className . '/' . $page . '.' . $type;
+        }
 
         try {
             $this->view->render($pageFile, $variables, $template, $type);
         } catch(\Exception $error){
             AppLog::noteError($error);
         }
+    }
+
+
+    /**
+     * Default page rendered for error page
+     */
+    public function pageError404()
+    {
+        $this->setTitle('Not Found');
+        $this->renderPage('error-pages/error404', null, 'empty');
     }
 
 

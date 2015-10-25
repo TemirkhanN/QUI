@@ -14,11 +14,6 @@
     <?=$this->headers()?>
 </head>
 <body>
-
-    <header>
-        <?=$this->layer()?>
-    </header>
-
     <div id="content">
         <div class="container">
 
@@ -26,10 +21,12 @@
 
         </div>
     </div>
-
-    <footer>
-        <div class="container">
-           &copy; all rights corrupted
+    <br>
+    <footer class="container">
+        <div class="panel panel-success">
+            <div class="panel-heading">
+                &copy; all rights corrupted
+            </div>
         </div>
     </footer>
 

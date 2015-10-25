@@ -51,10 +51,11 @@ class AutoLoader
      */
     private static function validToRequire($classPath = '')
     {
-
         $pathToFile = realpath(self::PROJECT_ROOT.'/'.$classPath);
 
-        return $pathToFile && preg_match('#'.str_replace('\\', '\\\\\\', ROOT_DIR).'#', $pathToFile);
+        $isInProjectDir = preg_match('#'.str_replace('\\', '\\\\\\', ROOT_DIR).'#', $pathToFile);
+
+        return $pathToFile && $isInProjectDir && file_exists($pathToFile);
 
     }
 

@@ -13,7 +13,7 @@ class View
     protected $layout = 'main/main-menu'; //default layout called as $this->layout();
     protected $page = 'index';
     protected $content = '';
-    protected $customTemplate = false; //if set to true default.php won't be used (only rendering view)
+    protected $template = 'default'; //custom template predefined for rendering content
     public $title = 'QUI framework'; //site title
 
     /**
@@ -85,6 +85,7 @@ class View
             if(file_exists($pageFile)){
 
                 $this->content = $this->renderContent($pageFile, $variables);
+                $template = !empty($template) ? $template : $this->template;
                 $this->renderTemplate($template);
 
             } else{
@@ -113,6 +114,14 @@ class View
         include $page;
 
         return ob_get_clean();
+    }
+
+    /**
+     * @param string $template
+     */
+    public function setTemplate($template)
+    {
+        $this->template = $template;
     }
 
     /**
@@ -208,7 +217,6 @@ class View
      */
     public function layer($layer = '', $type = 'php')
     {
-
         $type = $type === 'php' ? 'php': 'html';
         $layer = trim($layer);
         if(empty($layer) || !file_exists(ROOT_DIR . '/views/layers/' . $layer . '.'.$type)){

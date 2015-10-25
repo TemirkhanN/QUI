@@ -12,12 +12,24 @@
 </head>
 <body>
 
+<style>
+    pre{
+        font-size:14px;
+    }
+</style>
 <div id="content">
+
     <div class="container">
-
-        <?=$this->content()?>
-
+        <div class="col-sm-3">
+            <?=$this->layer('wiki/navigation')?>
+        </div>
+        <div class="col-sm-9">
+            <?=$this->content()?>
+        </div>
     </div>
 </div>
+<br>
+
+<? $this->layer('wiki/footer');?>
 </body>
 </html>

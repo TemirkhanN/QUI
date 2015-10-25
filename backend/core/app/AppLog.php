@@ -45,10 +45,10 @@ class AppLog
 
     public static function showErrors()
     {
-        if (self::$errors !== null): ?>
+        if (self::$errors !== null && \App::getConfig('debugMode')): ?>
             <div class="panel panel-danger">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><?= \App::t('error') ?></h3>
+                    <h3 class="panel-title">error</h3>
                 </div>
                 <div class="panel-body">
                     <? array_walk(self::$errors, 'self::showError'); ?>
