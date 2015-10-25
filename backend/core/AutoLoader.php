@@ -53,7 +53,7 @@ class AutoLoader
     {
         $pathToFile = realpath(self::PROJECT_ROOT.'/'.$classPath);
 
-        $isInProjectDir = preg_match('#'.str_replace('\\', '\\\\\\', ROOT_DIR).'#', $pathToFile);
+        $isInProjectDir = preg_match('#'.str_replace('\\', '\\\\', ROOT_DIR).'#', $pathToFile);
 
         return $pathToFile && $isInProjectDir && file_exists($pathToFile);
 
