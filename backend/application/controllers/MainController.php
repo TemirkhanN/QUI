@@ -9,6 +9,6 @@ class MainController extends Controller
     public function pageIndex()
     {
         $this->setTitle('Welcome to QUI');
-        $this->renderPage('index', compact('var'));
+        $this->renderPage('index');
     }
 }

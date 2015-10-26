@@ -31,8 +31,6 @@ class App
      * @var \core\db\DBMSOperator
      */
     private static $db; //database connections
-    public static $templateDir; //application template(view) folder
-    public static $language = self::DEFAULT_LANG;
     private static $request = [
         'get'=>[], // sanitized $_GET
         'post' => [], // sanitized $_POST
@@ -57,8 +55,6 @@ class App
     private function __construct()
     {
         AppDebug::switchDebugMode(self::getConfig('debugMode'));
-        self::$templateDir = FRONTEND_DIR . '/templates';
-        self::$language = self::getConfig('language');
     }
 
 
@@ -126,38 +122,57 @@ class App
      */
     private function fillRequestData()
     {
-        self::$request['cookies'] = filter_var_array($_COOKIE, FILTER_SANITIZE_STRING);;
+        self::$request['cookie'] = filter_var_array($_COOKIE, FILTER_SANITIZE_STRING);;
         self::$request['get'] = filter_var_array($_GET, FILTER_SANITIZE_STRING);
         self::$request['post'] = filter_var_array($_POST, FILTER_SANITIZE_STRING);
     }
 
 
     /**
-     * @param string $param name of parameter
+     * Returns $_GET
+     * If null passed, returns all $_GET params
+     *
+     * @param string| null $param name of parameter
      * @return null | mixed
      */
-    public function get($param)
+    public function get($param = null)
     {
+        if($param === null){
+            return self::$request['get'];
+        }
         return isset(self::$request['get'][$param]) ? self::$request['get'][$param] : null;
     }
 
 
     /**
-     * @param string $param name of parameter
+     * Returns $_POST
+     * If null passed, returns all $_POST params
+     *
+     * @param string| null $param name of parameter
      * @return null | mixed
      */
-    public function post($param)
+    public function post($param = null)
     {
+        if($param === null){
+            return self::$request['post'];
+        }
         return isset(self::$request['post'][$param]) ? self::$request['post'][$param] : null;
     }
 
 
     /**
-     * @param string $param name of parameter
+     * Returns $_COOKIE
+     * If null passed, returns all cookies
+     *
+     * @param string| null $param name of parameter
      * @return null | string
      */
-    public function cookie($param)
+    public function cookie($param = null)
     {
+        if($param === null){
+            return self::$request['cookie'];
+        }
+
         return isset(self::$request['cookie'][$param]) ? self::$request['cookie'][$param] : null;
     }
 

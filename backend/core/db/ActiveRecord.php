@@ -1,6 +1,7 @@
 <?php
 
 namespace core\db;
+use core\app\AppLog;
 
 
 /**
@@ -79,6 +80,9 @@ class ActiveRecord implements ActiveRecordInterface
     {
         $tableName = get_called_class();
 
+        $tableName = explode('\\', $tableName);
+        $tableName = array_pop($tableName);
+
         $activeRecord = new self($tableName);
 
         return $activeRecord;
@@ -94,16 +98,21 @@ class ActiveRecord implements ActiveRecordInterface
     {
 
         try {
-            $this->_db = App::$app->db();
+            $this->_db = \App::$app->db();
 
             if (!$this->_db instanceof DBMSOperator) {
                 throw new \ErrorException('Connection to database is not set or not instance of "Connection"');
             } else {
                 $this->_tableName = $realTableName ? $realTableName : lcfirst((new \ReflectionClass($this))->getShortName());
+                $this->_tableName = preg_replace_callback('#(?![A-Z]).[A-Z]#', function($match){
+                    $chars = str_split($match[0]);
+                    return strtolower(implode('_', $chars));
+                }, $this->_tableName);
+                $this->_tableName = strtolower($this->_tableName);
             }
 
         } catch (\ErrorException $e) {
-            App::noteError($e);
+            AppLog::noteError($e);
             return;
         }
     }
@@ -142,10 +151,13 @@ class ActiveRecord implements ActiveRecordInterface
     /**
      * Returns all elements from AR table satisfying condition
      *
-     * @param string $where condition to get items from database
+     * Null condition means all rows
+     *
+     *
+     * @param string | null $where condition to get items from database
      * @return false | array items found by condition passed
      */
-    public static function findAll($where)
+    public static function findAll($where = null)
     {
 
         $activeRecord = self::init();

@@ -44,8 +44,6 @@ class Form {
         $this->id = isset($params['id']) ? $params['id'] : null;
 
         $this->checkAlreadySubmitted();
-
-
         $this->preBuild();
 
     }

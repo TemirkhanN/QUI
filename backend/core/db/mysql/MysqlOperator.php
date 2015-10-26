@@ -216,9 +216,11 @@ class MysqlOperator extends DBMSOperator
      * @param array $condition
      * @return $this
      */
-    public function where($condition)
+    public function where($condition = null)
     {
-        $this->where[] = '(' . $condition . ')';
+        if($condition!==null){
+            $this->where[] = '(' . $condition . ')';
+        }
 
         return $this;
     }
