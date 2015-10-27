@@ -124,7 +124,7 @@ class UrlManager {
 
     private function detectActionRoute($route = [], $match = [])
     {
-        if(count($match)>1 && empty($route['params'])){
+        if(count($match)>1){
             try {
                 preg_match('/{(\d+)}$/', $route['action'], $action);
                 if (isset($action[1])) {
@@ -140,8 +140,6 @@ class UrlManager {
 
         $this->actionRoute = $route['action'];
     }
-
-
 
     public function getRoute()
     {

@@ -84,8 +84,6 @@ class Form {
      */
     protected function preBuild()
     {
-
-
         $this->formStart = '<form';
 
 

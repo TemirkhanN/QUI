@@ -41,12 +41,15 @@ class Controller
             list($controllerName, $page) = [$route, 'index'];
         }
 
-        while ($controllerInSubDir = strpos($controllerName, '-')) {
+        $tmpControllerName = $controllerName;
+        while ($controllerInSubDir = strpos($tmpControllerName, '-')) {
             $leastString = mb_strcut($controllerName, $controllerInSubDir + 1); //What passed after matching - . At least shall stay only real controller name
+            $tmpControllerName = $leastString;
         }
 
         if (!empty($leastString)) {
             $controllerName = str_replace($leastString, ucfirst($leastString), $controllerName);
+            $controllerName = str_replace('-', '\\', $controllerName);
         } else {
             $controllerName = ucfirst($controllerName);
         }
@@ -108,6 +111,7 @@ class Controller
         try {
             $this->view->render($pageFile, $variables, $template, $type);
         } catch(\Exception $error){
+            $this->pageError404();
             AppLog::noteError($error);
         }
     }
@@ -119,7 +123,7 @@ class Controller
     public function pageError404()
     {
         $this->setTitle('Not Found');
-        $this->renderPage('error-pages/error404', null, 'empty');
+        $this->renderPage('error-pages/error404');
     }
 
 
@@ -155,6 +159,8 @@ class Controller
     /**
      * @param string $request  redirects from current controller to another one
      * for example myController/action  or  myController
+     * Note! Url adress will stay same. It doesn't redirect physically
+     * For physical redirect use redirectToUrl
      */
     public function redirect($request = '')
     {
