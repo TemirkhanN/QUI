@@ -59,7 +59,7 @@ class ActiveRecord implements ActiveRecordInterface
 
 
     /**
-     * @var DBMSOperator|bool
+     * @var DBMSOperator
      */
     private $_db;
 
@@ -155,9 +155,10 @@ class ActiveRecord implements ActiveRecordInterface
      *
      *
      * @param string | null $where condition to get items from database
+     * @param array $osrt sort
      * @return false | array items found by condition passed
      */
-    public static function findAll($where = null)
+    public static function findAll($where = null, $sort = [])
     {
 
         $activeRecord = self::init();
@@ -166,11 +167,11 @@ class ActiveRecord implements ActiveRecordInterface
             ->get()
             ->from($activeRecord->_tableName)
             ->where($where)
+            ->order($sort)
             ->launch();
 
         return $data ? $data : false;
     }
-
 
     /**
      * @param string $where condition
@@ -221,13 +222,17 @@ class ActiveRecord implements ActiveRecordInterface
             $this->_db
                 ->update($activeRecord)
                 ->to($this->_tableName)
-                ->where(['id' => $activeRecord['id']])
+                ->where('id='.$activeRecord['id']) //!!!TODO make good condition array pass for DBMS
                 ->launch()
             ) {
                 return true;
             }
         } else {
-            if ($this->_db->add($activeRecord)->to($this->_tableName)->launch()) {
+            if ($this->_db
+                ->add($activeRecord)
+                ->to($this->_tableName)
+                ->launch()
+            ) {
                 return (int)$this->_db->lastInsertId();
             }
         }

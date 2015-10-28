@@ -9,7 +9,7 @@ use core\app\AppLog;
  * Class Connection
  * @package core\db
  */
-class Connection extends PdoConnector
+class Connection extends PDOConnector
 {
     protected static $connections = [];
 

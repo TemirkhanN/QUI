@@ -4,7 +4,7 @@ namespace core\db\mysql;
 
 
 use \core\db\DBMSOperator;
-
+//!!!TODO make good condition array pass for DBMS
 class MysqlOperator extends DBMSOperator
 {
     const MAX_LIMIT = '18446744073709551615';
@@ -324,7 +324,6 @@ class MysqlOperator extends DBMSOperator
             default:
                 $this->buildSelectQuery();
         }
-
         return $this->query;
     }
 

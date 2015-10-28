@@ -4,13 +4,13 @@ namespace core\db;
 
 
 /**
- * Class PdoConnector
+ * Class PDOConnector
  * @package core\db
  *
  * Mother of all database actions. Tis some kind of cover of getting, checking, deleting and updating queries
  * Comments are in russian. It will be changed soon
  */
-class PdoConnector
+class PDOConnector
 {
 
 

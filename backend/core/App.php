@@ -202,7 +202,7 @@ class App
      * @param null | string $dsn required database management system name
      *
      *
-     * @return \core\db\DBMSOperator|bool
+     * @return \core\db\DBMSOperator | false
      */
     public function db($database = null, $dsn = null)
     {

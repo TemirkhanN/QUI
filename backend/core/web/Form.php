@@ -117,8 +117,7 @@ class Form {
      */
     public function field($type, $params)
     {
-
-        if(!empty($params['name'])){
+        if(!empty($params['name']) && empty($params['value'])){
 
             $params['value'] = $this->fillWithSubmittedValue($params['name']);
 

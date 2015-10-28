@@ -165,5 +165,6 @@ class Controller
     public function redirect($request = '')
     {
         self::runController($request);
+        exit();
     }
 }
