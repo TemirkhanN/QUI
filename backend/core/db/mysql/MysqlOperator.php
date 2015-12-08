@@ -4,7 +4,7 @@ namespace core\db\mysql;
 
 
 use \core\db\DBMSOperator;
-//!!!TODO make good condition array pass for DBMS
+
 class MysqlOperator extends DBMSOperator
 {
     const MAX_LIMIT = '18446744073709551615';
@@ -216,10 +216,10 @@ class MysqlOperator extends DBMSOperator
      * @param array $condition
      * @return $this
      */
-    public function where($condition = null)
+    public function where($condition)
     {
-        if($condition!==null){
-            $this->where[] = '(' . $condition . ')';
+        if(!empty($condition)) {
+            $this->where[] = '(' . $this->implementWhere($condition) . ')';
         }
 
         return $this;
@@ -252,7 +252,6 @@ class MysqlOperator extends DBMSOperator
 
         return $this;
     }
-
 
     /**
      * @param array $order
@@ -462,6 +461,26 @@ class MysqlOperator extends DBMSOperator
         }
     }
 
+    /**
+     * $condition = ['id', '=', 13]
+     *
+     * @param array $condition
+     * @return string
+     */
+    private function implementWhere($condition)
+    {
+        if(empty($condition)){
+            return '';
+        }
+
+        $placeholder = uniqid($condition[0]);
+
+        $query = "`{$condition[0]}` " . $condition[1] ." :" . $placeholder;
+
+        $this->data['placeholders'][$placeholder] = $condition[2];
+
+        return $query;
+    }
 
     /*
      * @return void

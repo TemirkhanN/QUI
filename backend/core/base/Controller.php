@@ -141,7 +141,7 @@ class Controller
     /**
      * @param string $url where redirection shall happen
      * it may be absolute url or relative path to local resource
-     * For example: $this->redirect('/login/'); $this->redirect('https://github.com');
+     * For example: $this->redirectToUrl('/login/'); $this->redirectToUrl('https://github.com');
      *
      * @param int $code header answer code while redirecting
      */

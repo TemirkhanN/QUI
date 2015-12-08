@@ -1,7 +1,7 @@
 <?php
 
 return  [
-    'debugMode' => false,
+    'debugMode' => true,
 
     'local' => [
         'lang' => 'ru_RU',

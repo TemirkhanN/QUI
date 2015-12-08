@@ -57,10 +57,6 @@ class ActiveRecord implements ActiveRecordInterface
     const OBJ = 'object';
     const ARR = 'array';
 
-
-    /**
-     * @var DBMSOperator
-     */
     private $_db;
 
     // This variable always declared. Contains primary key of record
@@ -80,9 +76,6 @@ class ActiveRecord implements ActiveRecordInterface
     {
         $tableName = get_called_class();
 
-        $tableName = explode('\\', $tableName);
-        $tableName = array_pop($tableName);
-
         $activeRecord = new self($tableName);
 
         return $activeRecord;
@@ -98,17 +91,13 @@ class ActiveRecord implements ActiveRecordInterface
     {
 
         try {
-            $this->_db = \App::$app->db();
+            $this->_db = App::$app->db();
 
             if (!$this->_db instanceof DBMSOperator) {
                 throw new \ErrorException('Connection to database is not set or not instance of "Connection"');
             } else {
                 $this->_tableName = $realTableName ? $realTableName : lcfirst((new \ReflectionClass($this))->getShortName());
-                $this->_tableName = preg_replace_callback('#(?![A-Z]).[A-Z]#', function($match){
-                    $chars = str_split($match[0]);
-                    return strtolower(implode('_', $chars));
-                }, $this->_tableName);
-                $this->_tableName = strtolower($this->_tableName);
+                $this->_tableName = basename($this->_tableName);
             }
 
         } catch (\ErrorException $e) {
@@ -124,10 +113,10 @@ class ActiveRecord implements ActiveRecordInterface
      * !!!NOTE: method returns ONLY array or false. Mixed is added to hide
      * "property not found in class" warnings in IDE
      *
-     * @param string $where conditions that passed as ['column'=>'columnValue', ...]
+     * @param array|null $where conditions that passed as ['column'=>'columnValue', ...]
      * @return array | bool | mixed AR fields and data as assoc array if it exists
      */
-    public static function findOne($where)
+    public static function findOne($where = null)
     {
         $activeRecord = self::init();
 
@@ -142,7 +131,7 @@ class ActiveRecord implements ActiveRecordInterface
             return false;
         }
 
-        $activeRecord->declareFields($data[0]);
+        $activeRecord = $activeRecord->declareFields($data[0]);
 
         return $activeRecord;
     }
@@ -151,14 +140,10 @@ class ActiveRecord implements ActiveRecordInterface
     /**
      * Returns all elements from AR table satisfying condition
      *
-     * Null condition means all rows
-     *
-     *
-     * @param string | null $where condition to get items from database
-     * @param array $osrt sort
+     * @param array|null $where condition to get items from database
      * @return false | array items found by condition passed
      */
-    public static function findAll($where = null, $sort = [])
+    public static function findAll($where = null)
     {
 
         $activeRecord = self::init();
@@ -167,11 +152,19 @@ class ActiveRecord implements ActiveRecordInterface
             ->get()
             ->from($activeRecord->_tableName)
             ->where($where)
-            ->order($sort)
             ->launch();
 
-        return $data ? $data : false;
+        if($data){
+            foreach($data as $key=>$item){
+                $data[$key] = $activeRecord->declareFields($item);
+            }
+
+            return $data;
+        }
+
+        return false;
     }
+
 
     /**
      * @param string $where condition
@@ -222,17 +215,13 @@ class ActiveRecord implements ActiveRecordInterface
             $this->_db
                 ->update($activeRecord)
                 ->to($this->_tableName)
-                ->where('id='.$activeRecord['id']) //!!!TODO make good condition array pass for DBMS
+                ->where(['id', '=', $activeRecord['id']])
                 ->launch()
             ) {
                 return true;
             }
         } else {
-            if ($this->_db
-                ->add($activeRecord)
-                ->to($this->_tableName)
-                ->launch()
-            ) {
+            if ($this->_db->add($activeRecord)->to($this->_tableName)->launch()) {
                 return (int)$this->_db->lastInsertId();
             }
         }
@@ -259,12 +248,16 @@ class ActiveRecord implements ActiveRecordInterface
 
     /**
      * @param array $fields AR's columns and their values values
+     * @return ActiveRecord
      */
     protected function declareFields($fields)
     {
+        $activeRecord = clone $this;
         foreach ($fields as $field => $value) {
-            $this->{$field} = $value;
+            $activeRecord->{$field} = $value;
         }
+
+        return $activeRecord;
     }
 
 }

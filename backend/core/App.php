@@ -28,13 +28,17 @@ class App
     private static $config; //application configuration
 
     /**
-     * @var \core\db\DBMSOperator
+     * database connections
+     * @var array
      */
-    private static $db; //database connections
+    private static $db;
+
+
+    public static $language = self::DEFAULT_LANG;
     private static $request = [
-        'get'=>[], // sanitized $_GET
-        'post' => [], // sanitized $_POST
-        'cookie' => [], // sanitized $_COOKIE
+        'get' => [], //$_GET
+        'post' => [], //$_POST
+        'cookie' => [], //$_COOKIE
         'routedParams' => [] // route params ruled in config and parsed by UrlManager
     ];
 
@@ -63,7 +67,7 @@ class App
      */
     public static function debugTrack($tracker = 'mainTracker')
     {
-        if(self::getConfig('debugMode')) {
+        if (self::getConfig('debugMode')) {
             AppDebug::debugTrack($tracker);
         }
     }
@@ -88,10 +92,9 @@ class App
      */
     public static function getConfig($conf = null)
     {
-        if(self::$config === null){
+        if (self::$config === null) {
             self::$config = FileSystem::requireFile(ROOT_DIR . '/config/main.php');
         }
-
 
         if (!empty($conf)) {
 
@@ -118,62 +121,35 @@ class App
 
 
     /**
-     * initializes and sanitizes request parameters from superglobals
+     * @param string $param name of parameter
+     * @param int $filter sanitizing rule
+     * @return mixed|null
      */
-    private function fillRequestData()
+    public function get($param, $filter = FILTER_SANITIZE_STRING)
     {
-        self::$request['cookie'] = filter_var_array($_COOKIE, FILTER_SANITIZE_STRING);;
-        self::$request['get'] = filter_var_array($_GET, FILTER_SANITIZE_STRING);
-        self::$request['post'] = filter_var_array($_POST, FILTER_SANITIZE_STRING);
+        return isset($_GET[$param]) ? filter_var($_GET[$param], $filter) : null;
     }
 
 
     /**
-     * Returns $_GET
-     * If null passed, returns all $_GET params
-     *
-     * @param string| null $param name of parameter
-     * @return null | mixed
+     * @param string $param name of parameter
+     * @param int $filter sanitizing rule
+     * @return mixed|null
      */
-    public function get($param = null)
+    public function post($param, $filter = FILTER_SANITIZE_STRING)
     {
-        if($param === null){
-            return self::$request['get'];
-        }
-        return isset(self::$request['get'][$param]) ? self::$request['get'][$param] : null;
+        return isset($_POST[$param]) ? filter_var($_POST[$param], $filter) : null;
     }
 
 
     /**
-     * Returns $_POST
-     * If null passed, returns all $_POST params
-     *
-     * @param string| null $param name of parameter
-     * @return null | mixed
+     * @param string $param name of parameter
+     * @param int $filter sanitizing rule
+     * @return string|null
      */
-    public function post($param = null)
+    public function cookie($param, $filter = FILTER_SANITIZE_STRING)
     {
-        if($param === null){
-            return self::$request['post'];
-        }
-        return isset(self::$request['post'][$param]) ? self::$request['post'][$param] : null;
-    }
-
-
-    /**
-     * Returns $_COOKIE
-     * If null passed, returns all cookies
-     *
-     * @param string| null $param name of parameter
-     * @return null | string
-     */
-    public function cookie($param = null)
-    {
-        if($param === null){
-            return self::$request['cookie'];
-        }
-
-        return isset(self::$request['cookie'][$param]) ? self::$request['cookie'][$param] : null;
+        return isset($_COOKIE[$param]) ? filter_var($_COOKIE[$param], $filter) : null;
     }
 
 
@@ -238,7 +214,6 @@ class App
                 $route = $urlManager->getRoute();
 
                 self::$request['routedParams'] = $urlManager->getRequestParams();
-                $this->fillRequestData();
                 Controller::runController($route);
             }
         }
