@@ -234,7 +234,9 @@ class MysqlOperator extends DBMSOperator
      */
     public function andWhere($condition)
     {
-        $this->where[] = 'AND (' . $condition . ')';
+        if(!empty($condition)) {
+            $this->where[] = 'AND (' . $this->implementWhere($condition) . ')';
+        }
 
         return $this;
     }
@@ -248,7 +250,9 @@ class MysqlOperator extends DBMSOperator
      */
     public function orWhere($condition)
     {
-        $this->where[] = 'OR (' . $condition . ')';
+        if(!empty($condition)) {
+            $this->where[] = 'OR (' . $this->implementWhere($condition) . ')';
+        }
 
         return $this;
     }

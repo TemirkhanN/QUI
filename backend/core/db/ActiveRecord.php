@@ -57,13 +57,16 @@ class ActiveRecord implements ActiveRecordInterface
     const OBJ = 'object';
     const ARR = 'array';
 
-    private $_db;
-
-    // This variable always declared. Contains primary key of record
-    public $id;
+    /**
+     * @var DBMSOperator
+     */
+    private $db;
 
     // Name of table that record extends to declare structure and save/delete/update & etc operations
-    private $_tableName;
+    private $tableName;
+
+
+    private $fields = [];
 
 
     /**
@@ -82,6 +85,18 @@ class ActiveRecord implements ActiveRecordInterface
     }
 
 
+    public function __get($column)
+    {
+        return isset($this->fields[$column]) ? $this->fields[$column] : null;
+    }
+
+
+    public function __set($column, $value)
+    {
+        $this->fields[$column] = $value;
+    }
+
+
     /**
      * Creates new active record
      * @param string | null $realTableName forcely sets ActiveRecords table to choosen
@@ -89,15 +104,14 @@ class ActiveRecord implements ActiveRecordInterface
      */
     public function __construct($realTableName = null)
     {
-
         try {
-            $this->_db = App::$app->db();
+            $this->db = \App::$app->db();
 
-            if (!$this->_db instanceof DBMSOperator) {
+            if (!$this->db instanceof DBMSOperator) {
                 throw new \ErrorException('Connection to database is not set or not instance of "Connection"');
             } else {
-                $this->_tableName = $realTableName ? $realTableName : lcfirst((new \ReflectionClass($this))->getShortName());
-                $this->_tableName = basename($this->_tableName);
+                $this->tableName = $realTableName ? $realTableName : lcfirst((new \ReflectionClass($this))->getShortName());
+                $this->tableName = basename($this->tableName);
             }
 
         } catch (\ErrorException $e) {
@@ -114,15 +128,15 @@ class ActiveRecord implements ActiveRecordInterface
      * "property not found in class" warnings in IDE
      *
      * @param array|null $where conditions that passed as ['column'=>'columnValue', ...]
-     * @return array | bool | mixed AR fields and data as assoc array if it exists
+     * @return ActiveRecord|false AR fields and data as assoc array if it exists
      */
     public static function findOne($where = null)
     {
         $activeRecord = self::init();
 
-        $data = $activeRecord->_db
+        $data = $activeRecord->db
             ->get()
-            ->from($activeRecord->_tableName)
+            ->from($activeRecord->tableName)
             ->where($where)
             ->limit(1)
             ->launch();
@@ -140,25 +154,29 @@ class ActiveRecord implements ActiveRecordInterface
     /**
      * Returns all elements from AR table satisfying condition
      *
+     *
+     *
      * @param array|null $where condition to get items from database
-     * @return false | array items found by condition passed
+     * @param int $offset
+     * @param int $limit
+     * @return array|false items found by condition passed
      */
-    public static function findAll($where = null)
+    public static function findAll($where = null, $offset = 0, $limit = 0)
     {
-
         $activeRecord = self::init();
 
-        $data = $activeRecord->_db
+        $data = $activeRecord->db
             ->get()
-            ->from($activeRecord->_tableName)
+            ->from($activeRecord->tableName)
             ->where($where)
+            ->offset($offset)
+            ->limit($limit)
             ->launch();
 
-        if($data){
-            foreach($data as $key=>$item){
+        if ($data) {
+            foreach ($data as $key => $item) {
                 $data[$key] = $activeRecord->declareFields($item);
             }
-
             return $data;
         }
 
@@ -172,12 +190,11 @@ class ActiveRecord implements ActiveRecordInterface
      */
     public static function deleteOne($where)
     {
-
         $activeRecord = self::init();
 
-        return $activeRecord->_db
+        return $activeRecord->db
             ->delete()
-            ->from($activeRecord->_tableName)
+            ->from($activeRecord->tableName)
             ->where($where)
             ->limit(1)
             ->launch();
@@ -192,9 +209,9 @@ class ActiveRecord implements ActiveRecordInterface
     {
         $activeRecord = self::init();
 
-        return $activeRecord->_db
+        return $activeRecord->db
             ->delete()
-            ->from($activeRecord->_tableName)
+            ->from($activeRecord->tableName)
             ->where($where)
             ->launch();
     }
@@ -208,43 +225,24 @@ class ActiveRecord implements ActiveRecordInterface
      */
     public function save()
     {
-        $activeRecord = $this->getPublicProperties();
-
-        if ($activeRecord['id']) {
+        if ($this->fields['id']) {
             if (
-            $this->_db
-                ->update($activeRecord)
-                ->to($this->_tableName)
-                ->where(['id', '=', $activeRecord['id']])
+            $this->db
+                ->update($this->fields)
+                ->to($this->tableName)
+                ->where(['id', '=', $this->fields['id']])
                 ->launch()
             ) {
                 return true;
             }
         } else {
-            if ($this->_db->add($activeRecord)->to($this->_tableName)->launch()) {
-                return (int)$this->_db->lastInsertId();
+            if ($this->db->add($this->fields)->to($this->tableName)->launch()) {
+                return (int)$this->db->lastInsertId();
             }
         }
 
         return false;
     }
-
-
-    /**
-     * @return array $properties
-     */
-    private function getPublicProperties()
-    {
-        $publicProperties = (new \ReflectionObject($this))->getProperties(\ReflectionProperty::IS_PUBLIC);
-
-        $properties = [];
-        foreach ($publicProperties as $property) {
-            $properties[$property->name] = $this->{$property->name};
-        }
-
-        return $properties;
-    }
-
 
     /**
      * @param array $fields AR's columns and their values values

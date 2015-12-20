@@ -10,6 +10,10 @@ namespace core\db;
 interface ActiveRecordInterface
 {
 
+    public function __set($column, $value);
+
+    public function __get($column);
+
     public static function findOne($condition);
 
 
