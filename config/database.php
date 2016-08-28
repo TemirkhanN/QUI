@@ -8,9 +8,9 @@ return [
     'default' => 'mysql',
     'mysql' => [
         'host' => 'localhost',
-        'name' => 'beauty',
-        'user' => 'root',
-        'password' => ''
+        'name' => 'dbname',
+        'user' => 'dbuser',
+        'password' => 'dbpassword'
     ],
     'pgsql' => [],
     'mssql' => [],

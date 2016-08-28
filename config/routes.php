@@ -12,7 +12,7 @@
 
 return [
     ['route' => '^/?$', 'action' => 'main'],
-    ['route' => '^/showcase/$', 'action' => 'main/example'],
+    ['route' => '^/redirect$', 'action' => 'main/outgoingLink'],
     ['route' => '^/wiki/?$', 'action' => 'wiki/index'],
     ['route' => '^/wiki/([a-z]+)/?$', 'action' => 'wiki/{1}']
 ];

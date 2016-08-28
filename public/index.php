@@ -1,16 +1,22 @@
 <?php
 
-define('ROOT_DIR', realpath($_SERVER['DOCUMENT_ROOT']. '/..'));
-define('FRONTEND_DIR', $_SERVER['DOCUMENT_ROOT']);
-define('TEMPLATE_DIR', ROOT_DIR . '/views/templates');
+define('FRONTEND_DIR', __DIR__);
+define('ROOT_DIR', dirname(FRONTEND_DIR));
 define('SITE_ADDRESS', $_SERVER['SERVER_NAME']);
+define('DEV_MODE', true); //Switch off on production
 
-require ROOT_DIR . '/backend/core/AutoLoader.php';
-require ROOT_DIR . '/backend/core/App.php';
+if(DEV_MODE){
+    ini_set('display_errors', 1);
+    error_reporting(-1);
+}
 
 
-App::debugTrack();
+require ROOT_DIR . '/backend/qui/AutoLoader.php';
+require ROOT_DIR . '/backend/qui/Qui.php';
 
-App::init()->run();
 
-App::debugInfo();
+Qui::debugTrack();
+
+Qui::init()->run();
+
+Qui::debugInfo();

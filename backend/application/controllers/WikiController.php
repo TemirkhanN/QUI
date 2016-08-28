@@ -3,7 +3,7 @@
 namespace application\controllers;
 
 
-use core\base\Controller;
+use qui\base\Controller;
 
 /**
  * This is a wiki pages controller. It is not necessary for correct application work.
@@ -19,29 +19,35 @@ class WikiController extends Controller
         parent::__construct();
 
         $this->view->setTitle('User guide - QUI');
-        $this->view->setTemplate('wiki');
-        $this->view->registerCss('/css/bootstrap/bootstrap.min.css');
-        $this->view->registerCss('/js/highlightjs/styles/monokai_sublime.css');
-        $this->view->registerJs('/js/highlightjs/highlight.pack.js');
+        $this->view->bindCss('/css/bootstrap/bootstrap.min.css');
+        $this->view->bindCss('/js/highlightjs/styles/monokai_sublime.css');
+        $this->view->bindJs('/js/highlightjs/highlight.pack.js');
     }
 
 
     public function pageIndex()
     {
-        $this->renderPage('index');
+        $content = $this->renderPartial('wiki/index');
+        $this->view->setContent($content);
+
+        $this->renderTemplate('wiki');
     }
 
 
     public function pageRouter()
     {
+        $content = $this->renderPartial('wiki/router');
         $this->view->setTitle('Routing - QUI');
-        $this->renderPage('router');
+        $this->view->setContent($content);
+        $this->renderTemplate('wiki');
     }
+
 
     public function pageConfig()
     {
         $this->view->setTitle('Configurations - QUI');
-        $this->renderPage('configuration');
+        $this->view->setContent($this->renderPartial('wiki/configuration'));
+        $this->renderTemplate('wiki');
     }
 
 }

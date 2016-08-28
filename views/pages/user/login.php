@@ -54,7 +54,7 @@
 
 
 <?php
-$loginForm = new core\web\Form(['method'=>'POST', 'class'=>'form-signin']);
+$loginForm = new qui\web\Form(['method'=>'POST', 'class'=>'form-signin']);
 ?>
 
 <?=$loginForm->begin()?>
