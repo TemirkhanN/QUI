@@ -8,8 +8,8 @@ class MainController extends Controller
 
     public function pageIndex()
     {
-        $this->view->setTitle('Welcome to QUI');
-        $this->view->setContent($this->renderPartial('main/index'));
+        $this->setTitle('Welcome to QUI');
+        $this->setContent($this->renderPartial('main/index'));
 
         $this->renderTemplate('default');
     }

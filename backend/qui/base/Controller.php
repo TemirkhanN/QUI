@@ -29,6 +29,41 @@ class Controller
         $this->view = new View();
     }
 
+    
+    /**
+     * @param string $title
+     */
+    public function setTitle($title = '')
+    {
+        $this->view->setTitle($title);
+    }
+
+    
+    /**
+     * @param string $content
+     */
+    public function setContent($content = '')
+    {
+        $this->view->setContent($content);
+    }
+
+    
+    /**
+     * @param string $path
+     */
+    public function bindCss($path = '')
+    {
+        $this->view->bindCss($path);
+    }
+    
+
+    /**
+     * @param string $path
+     */
+    public function bindJs($path = '')
+    {
+        $this->view->bindJs($path);
+    }
 
     /**
      * @param string $template
