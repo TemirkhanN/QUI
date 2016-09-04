@@ -10,14 +10,13 @@
  
 ## Directory structure
 1. backend
-2. cache
-3. config
-4. public
-5. views
+2. config
+3. public
+4. views
 
 ## Installation
 1. Clone repository
-2. Configure your application's(web-site) document_root to /frontend/
+2. Configure your application's(web-site) document_root to /public/
 3. Setup application configuration at /config/main.php
 
 
